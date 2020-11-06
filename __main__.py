@@ -74,7 +74,7 @@ with open(args.config) as f:
 opentherm.topic_namespace=settings['mqtt']['pub_topic_namespace']
 
 # Set up logging
-log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+log_format = 'otgw: %(levelname)s - %(message)s'
 logging.basicConfig(level=num_level, format=log_format)
 log = logging.getLogger(__name__)
 log.info('Loglevel is %s', logging.getLevelName(log.getEffectiveLevel()))
@@ -97,7 +97,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
 
 def on_mqtt_message(client, userdata, msg):
     # Handle incoming messages
-    log.info("Received message on topic {} with payload {}".format(
+    log.debug("Received message on topic {} with payload {}".format(
         msg.topic, 
         str(msg.payload.decode('ascii', 'ignore'))))
     namespace = settings['mqtt']['sub_topic_namespace']
@@ -114,6 +114,8 @@ def on_mqtt_message(client, userdata, msg):
             lambda _ :"SW={:.2f}".format(float(_) if is_float(_) else 60),
         "{}/central_heating/enable".format(namespace):  \
             lambda _ :"CH={}".format('0' if _ in false_values else '1'),
+        "{}/central_heating/temperature".format(namespace):   \
+            lambda _ :"SH={:.2f}".format(float(_) if is_float(_) else 60),
         "{}/cmd".format(namespace):  \
             lambda _ :_.strip(),
         # TODO: "set/otgw/raw/+": lambda _ :publish_to_otgw("PS", _)
@@ -123,7 +125,7 @@ def on_mqtt_message(client, userdata, msg):
     if command_generator:
         # Get the command and send it to the OTGW
         command = command_generator(msg.payload.decode('ascii', 'ignore'))
-        log.info("Sending command: '{}'".format(command))
+        log.debug("Sending command: '{}'".format(command))
         otgw_client.send("{}\r".format(command))
 
 def on_otgw_message(message):
