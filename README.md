@@ -50,34 +50,38 @@ To install this script as a daemon, run the following commands (on a Debian-base
 
 1. Install dependencies:
    ```bash
-   sudo apt install python python-serial
+   sudo apt install python3 python3-serial python3-paho-mqtt
    ```
 2. Create a new folder, for example:
    ```bash
-   sudo mkdir -p /usr/lib/py-otgw-mqtt
-   cd /usr/lib/py-otgw-mqtt
+   sudo mkdir -p /opt/py-otgw-mqtt
+   cd /opt/py-otgw-mqtt
    ```
 3. Clone this repository into the current directory:
    ```bash
-   sudo git clone https://github.com/martenjacobs/py-otgw-mqtt.git .
+   sudo git clone https://github.com/HellMar/py-otgw-mqtt.git .
    ```
-4. Change `config.json` with your favorite text editor
-5. Copy the service file to the systemd directory. If you used a different folder name than `/usr/lib/py-otgw-mqtt` you will need to change the `WorkingDirectory` in the file first.
+4. Copy the config.json.example file to config.json
    ```bash
-   sudo cp ./py-otgw-mqtt.service /etc/systemd/system/
+   sudo cp config.json.example config.json
    ```
-6. Enable the service so it starts up on boot:
+5. Change `config.json` with your favorite text editor
+6. Copy the service file to the systemd directory. If you used a different folder name than `/usr/lib/py-otgw-mqtt` you will need to change the `WorkingDirectory` in the file first.
+   ```bash
+   sudo cp ./otgw.service /etc/systemd/system/
+   ```
+7. Enable the service so it starts up on boot:
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl enable py-otgw-mqtt.service
+   sudo systemctl enable otgw.service
    ```
-7. Start up the service
+8. Start up the service
    ```bash
-   sudo systemctl start py-otgw-mqtt.service
+   sudo systemctl start otgw.service
    ```
-8. View the log to see if everything works
+9. View the log to see if everything works
    ```bash
-   journalctl -u py-otgw-mqtt.service -f
+   journalctl -u otgw.service -f
    ```
 
 ## Topics
@@ -124,5 +128,6 @@ By default, the service listens to messages from the following MQTT topics:
 - set/otgw/hot_water/enable
 - set/otgw/hot_water/temperature
 - set/otgw/central_heating/enable
+- set/otgw/central_heating/temperature
 
 > __TODO:__ Add description of all topics
