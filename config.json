@@ -14,8 +14,8 @@
         "username": null,
         "password": null,
         "qos": 0,
-        "pub_topic_namespace": "value/otgw",
-        "sub_topic_namespace": "set/otgw",
+        "pub_topic_namespace": "otgw/value",
+        "sub_topic_namespace": "otgw/set",
         "retain": false
     }
 }
