@@ -31,12 +31,12 @@ def flags_msg_generator(ot_id, val):
     Returns a generator for the messages
     """
     yield ("{}/{}".format(topic_namespace, ot_id), val, )
-    if(ot_id == "flame_status"):
-        yield ("{}/flame_status_ch".format(topic_namespace),
+    if(ot_id == "flame_status/state"):
+        yield ("{}/flame_status_ch/state".format(topic_namespace),
                val & ( 1 << 1 ) > 0, )
-        yield ("{}/flame_status_dhw".format(topic_namespace),
+        yield ("{}/flame_status_dhw/state".format(topic_namespace),
                val & ( 1 << 2 ) > 0, )
-        yield ("{}/flame_status_bit".format(topic_namespace),
+        yield ("{}/flame_status_bit/state".format(topic_namespace),
                val & ( 1 << 3 ) > 0, )
 
 def float_msg_generator(ot_id, val):
@@ -83,28 +83,28 @@ def get_messages(message):
 # discriptive names and message creators. I put this here because the
 # referenced generators have to be assigned first
 opentherm_ids = {
-	0:   ("flame_status",flags_msg_generator,),
-	1:   ("control_setpoint",float_msg_generator,),
-	9:   ("remote_override_setpoint",float_msg_generator,),
-	14:  ("max_relative_modulation_level",float_msg_generator,),
-	16:  ("room_setpoint",float_msg_generator,),
-	17:  ("relative_modulation_level",float_msg_generator,),
-	18:  ("ch_water_pressure",float_msg_generator,),
-	24:  ("room_temperature",float_msg_generator,),
-	25:  ("boiler_water_temperature",float_msg_generator,),
-	26:  ("dhw_temperature",float_msg_generator,),
-	27:  ("outside_temperature",float_msg_generator,),
-	28:  ("return_water_temperature",float_msg_generator,),
-	56:  ("dhw_setpoint",float_msg_generator,),
-	57:  ("max_ch_water_setpoint",float_msg_generator,),
-	116: ("burner_starts",int_msg_generator,),
-	117: ("ch_pump_starts",int_msg_generator,),
-	118: ("dhw_pump_starts",int_msg_generator,),
-	119: ("dhw_burner_starts",int_msg_generator,),
-	120: ("burner_operation_hours",int_msg_generator,),
-	121: ("ch_pump_operation_hours",int_msg_generator,),
-	122: ("dhw_pump_valve_operation_hours",int_msg_generator,),
-	123: ("dhw_burner_operation_hours",int_msg_generator,)
+	0:   ("flame_status/state",flags_msg_generator,),
+	1:   ("control_setpoint/setpoint",float_msg_generator,),
+	9:   ("remote_override_setpoint/setpoint",float_msg_generator,),
+	14:  ("max_relative_modulation_level/level",float_msg_generator,),
+	16:  ("room_setpoint/setpoint",float_msg_generator,),
+	17:  ("relative_modulation_level/level",float_msg_generator,),
+	18:  ("ch_water_pressure/pressure",float_msg_generator,),
+	24:  ("room_temperature/temperature",float_msg_generator,),
+	25:  ("boiler_water_temperature/temperature",float_msg_generator,),
+	26:  ("dhw_temperature/temperature",float_msg_generator,),
+	27:  ("outside_temperature/temperature",float_msg_generator,),
+	28:  ("return_water_temperature/temperature",float_msg_generator,),
+	56:  ("dhw_setpoint/setpoint",float_msg_generator,),
+	57:  ("max_ch_water_setpoint/setpoint",float_msg_generator,),
+	116: ("burner_starts/count",int_msg_generator,),
+	117: ("ch_pump_starts/count",int_msg_generator,),
+	118: ("dhw_pump_starts/count",int_msg_generator,),
+	119: ("dhw_burner_starts/count",int_msg_generator,),
+	120: ("burner_operation_hours/hours",int_msg_generator,),
+	121: ("ch_pump_operation_hours/hours",int_msg_generator,),
+	122: ("dhw_pump_valve_operation_hours/hours",int_msg_generator,),
+	123: ("dhw_burner_operation_hours/hours",int_msg_generator,)
 }
 
 class OTGWClient(object):
