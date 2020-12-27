@@ -55,6 +55,15 @@ def int_msg_generator(ot_id, val):
     """
     yield ("{}/{}".format(topic_namespace, ot_id), val, )
 
+def other_msg_generator(source, ttype, res, did, data):
+    r"""
+    Generate the pub-messages from an unknown message.
+    Casts value as string.
+
+    Returns a generator for the messages
+    """
+    yield ("{}/{}/{}/{}/{}/{}".format(topic_namespace, 'unknown', source, ttype, res, did), str(data), )
+
 def get_messages(message):
     r"""
     Generate the pub-messages from the supplied OT-message
@@ -70,21 +79,13 @@ def get_messages(message):
         map(lambda f, d: f(d),
             (str, lambda _: hex_int(_) & 7, hex_int, hex_int, hex_int),
             info.groups())
-    log.error("source: %s", str(source))
-    log.error("ttype: %s", str(ttype))
-    log.error("res: %s", str(res))
-    log.error("did: %s", str(did))
-    log.error("data: %s", str(data))
+
     if source not in ('B', 'T', 'A') \
         or ttype not in (1,4):
         return iter([])
     if did not in opentherm_ids:
-        log.error("in inter")
-        log.error("1st part: %s" , "{}/{}".format(topic_namespace, source))
-        log.error("2nd part: %s" ,  str(data))
-        log.error("type of all: %s", type(("{}/{}".format(topic_namespace, source), data)))
-        log.error("vall of all: %s", ("{}/{}".format(topic_namespace, source), data))
-        return iter(["{}/{}".format(topic_namespace, source), data])
+        return other_msg_generator(source, ttype, res, did, data)
+
     id_name, parser = opentherm_ids[did]
     return parser(id_name, data)
 
@@ -278,11 +279,7 @@ class OTGWClient(object):
                 # most lines will yield no messages or just one, but
                 # flags-based lines may return more than one.
                 log.debug("Raw message: %s", raw_message)
-                msgs = get_messages(raw_message)
-                log.error("message list type: %s", type(msgs))
-                for i in msgs:
-                    log.error("message item: [type: %s] %s", type(i), str(i))
-                for msg in msgs:
+                for msg in get_messages(raw_message):
                     try:
                         # Pass each message on to the listener
                         log.debug("Execute message: '%s'", msg)

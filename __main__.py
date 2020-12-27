@@ -134,7 +134,10 @@ def on_mqtt_message(client, userdata, msg):
 
 def on_otgw_message(message):
     if args.verbose:
-        log.debug("%s %s", str(datetime.datetime.now()), message)
+        log.debug("message: [type: %s] %s", type(message), message)
+    if type(message) is not tuple:
+        log.error("interal malformed message received - message was probably incorrectly parsed")
+        return
     # Force retain for device state
     if message[0] == opentherm.topic_namespace and (message[1] == 'online' or message[1] == 'offline'):
         retain=True
