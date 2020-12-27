@@ -31,13 +31,13 @@ def flags_msg_generator(ot_id, val):
     Returns a generator for the messages
     """
     yield ("{}/{}".format(topic_namespace, ot_id), val, )
-    if(ot_id == "flame_status/state"):
+    if(ot_id == "flame_status"):
         yield ("{}/flame_status_ch/state".format(topic_namespace),
-               val & ( 1 << 1 ) > 0, )
+               int(val & ( 1 << 1 ) > 0), )
         yield ("{}/flame_status_dhw/state".format(topic_namespace),
-               val & ( 1 << 2 ) > 0, )
+               int(val & ( 1 << 2 ) > 0), )
         yield ("{}/flame_status_bit/state".format(topic_namespace),
-               val & ( 1 << 3 ) > 0, )
+               int(val & ( 1 << 3 ) > 0), )
 
 def float_msg_generator(ot_id, val):
     r"""
@@ -70,10 +70,20 @@ def get_messages(message):
         map(lambda f, d: f(d),
             (str, lambda _: hex_int(_) & 7, hex_int, hex_int, hex_int),
             info.groups())
+    log.error("source: %s", str(source))
+    log.error("ttype: %s", str(ttype))
+    log.error("res: %s", str(res))
+    log.error("did: %s", str(did))
+    log.error("data: %s", str(data))
     if source not in ('B', 'T', 'A') \
         or ttype not in (1,4):
         return iter([])
     if did not in opentherm_ids:
+        log.error("in inter")
+        log.error("1st part: %s" , "{}/{}".format(topic_namespace, source))
+        log.error("2nd part: %s" ,  str(data))
+        log.error("type of all: %s", type(("{}/{}".format(topic_namespace, source), data)))
+        log.error("vall of all: %s", ("{}/{}".format(topic_namespace, source), data))
         return iter(["{}/{}".format(topic_namespace, source), data])
     id_name, parser = opentherm_ids[did]
     return parser(id_name, data)
@@ -83,7 +93,8 @@ def get_messages(message):
 # discriptive names and message creators. I put this here because the
 # referenced generators have to be assigned first
 opentherm_ids = {
-	0:   ("flame_status/state",flags_msg_generator,),
+    # flame status is special case... multiple bits of data. see flags_msg_generator
+	0:   ("flame_status",flags_msg_generator,),
 	1:   ("control_setpoint/setpoint",float_msg_generator,),
 	9:   ("remote_override_setpoint/setpoint",float_msg_generator,),
 	14:  ("max_relative_modulation_level/level",float_msg_generator,),
@@ -266,10 +277,15 @@ class OTGWClient(object):
                 # Get all the messages for the line that has been read,
                 # most lines will yield no messages or just one, but
                 # flags-based lines may return more than one.
-                for msg in get_messages(raw_message):
+                log.debug("Raw message: %s", raw_message)
+                msgs = get_messages(raw_message)
+                log.error("message list type: %s", type(msgs))
+                for i in msgs:
+                    log.error("message item: [type: %s] %s", type(i), str(i))
+                for msg in msgs:
                     try:
                         # Pass each message on to the listener
-                        log.debug("Execute message: '%s'", raw_message)
+                        log.debug("Execute message: '%s'", msg)
                         self._listener(msg)
                     except Exception as e:
                         # Log a warning when an exception occurs in the
