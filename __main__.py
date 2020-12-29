@@ -96,6 +96,10 @@ def on_mqtt_connect(client, userdata, flags, rc):
         qos=settings['mqtt']['qos'],
         retain=True)
 
+    # if we're using HA, send the HA discovery messages
+    if settings['mqtt']['homeassistant']:
+        send_HA_discovery()
+
 def on_mqtt_message(client, userdata, msg):
     # Handle incoming messages
     log.info("Received message on topic {} with payload {}".format(
@@ -162,11 +166,11 @@ def on_otgw_message(message):
         qos=settings['mqtt']['qos'],
         retain=retain)
 
-def send_HA_discovery(data):
+def send_HA_discovery():
     if args.verbose:
-        log.debug("send HA discovery: %s", payload)
+        log.debug("send HA discovery ")
 
-    for entity in data:
+    for entity in opentherm.build_ha_config_data():
         # Send out messages to the MQTT broker
         mqtt_client.publish(
             topic=entity['topic'],
@@ -233,9 +237,6 @@ otgw_type = {
                               .OTGWTcpClient,
                                   # This is actually not implemented yet
 }[settings['otgw']['type']]()
-
-if settings['mqtt']['homeassistant'] or True:
-    settings['ha_publish'] = send_HA_discovery
 
 # Create the actual instance of the client
 otgw_client = otgw_type(on_otgw_message, **settings['otgw'])

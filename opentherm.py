@@ -3,14 +3,14 @@ from threading import Thread
 from time import sleep
 import logging
 import collections
-import copy
+import copy, json
 
 log = logging.getLogger(__name__)
 
 # Default namespace for the topics. Will be overwritten with the value in
 # config
-topic_namespace="value/otgw"
-ha_publish_namespace="homeassistant/"
+topic_namespace="otgw/value"
+ha_publish_namespace="homeassistant"
 
 # Parse hex string to int
 def hex_int(hex):
@@ -118,15 +118,31 @@ opentherm_ids = {
 	120: ("burner_operation_hours/hours",int_msg_generator,),
 	121: ("ch_pump_operation_hours/hours",int_msg_generator,),
 	122: ("dhw_pump_valve_operation_hours/hours",int_msg_generator,),
-	123: ("dhw_burner_operation_hours/hours",int_msg_generator,)
+	123: ("dhw_burner_operation_hours/hours",int_msg_generator,),
+    997: ("flame_status_ch/state",int_msg_generator,),
+    998: ("flame_status_dhw/state",int_msg_generator,),
+    999: ("flame_status_bit/state",int_msg_generator,)
 }
 
+
+
+def cleanNullTerms(d):
+    clean = {}
+    for k, v in d.items():
+        if isinstance(v, dict):
+            nested = cleanNullTerms(v)
+            if len(nested.keys()) > 0:
+                clean[k] = nested
+        elif v is not None:
+            clean[k] = v
+    return clean
+
 payload_sensor = {
-    "availability_topic": None,
+    "availability_topic": topic_namespace,
     "device":
         {
         "connections": None,
-        "identifiers": ["opentherm-gateway", "otgw"],
+        "identifiers": ["opentherm-gateway"],
         "manufacturer": "Schelte Bron",
         "model": "otgw-nodo",
         "name": "OpenTherm Gateway",
@@ -135,7 +151,7 @@ payload_sensor = {
         },
     "device_class": None,
     "expire_after": None,
-    "force_update": True,
+    "force_update": 'True',
     "icon": None,
     "json_attributes_template": None,
     "json_attributes_topic": None,
@@ -159,12 +175,13 @@ payload_binary_sensor = {**payload_binary_sensor,
         "payload_not_available": None,
         "topic": None,
         },
-    "off_delay": 0,
-    "payload_off": None,
-    "payload_on": None,
+    "off_delay": None,
+    "payload_off": 0,
+    "payload_on": 1,
     }
 }
 del payload_binary_sensor["unit_of_measurement"]
+payload_binary_sensor['device_class'] = 'heat'
 
 # deepcopy
 payload_sensor_temperature = copy.deepcopy(payload_sensor)
@@ -172,23 +189,58 @@ payload_sensor_temperature['device_class'] = 'temperature'
 payload_sensor_temperature['unit_of_measurement'] = 'C'
 
 payload_sensor_hours = copy.deepcopy(payload_sensor)
-payload_sensor_hours['device_class'] = 'None'
-payload_sensor_hours['icon'] = 'has:clock'
+payload_sensor_hours['device_class'] = None
+payload_sensor_hours['icon'] = 'mdi:clock'
 payload_sensor_hours['unit_of_measurement'] = 'Hours'
 
-payload_sensor_bar = copy.deepcopy(payload_sensor)
-payload_sensor_bar['device_class'] = 'pressure'
-payload_sensor_bar['unit_of_measurement'] = 'Bar'
+payload_sensor_pressure = copy.deepcopy(payload_sensor)
+payload_sensor_pressure['device_class'] = 'pressure'
+payload_sensor_pressure['unit_of_measurement'] = 'Bar'
 
 
 payload_sensor_count = copy.deepcopy(payload_sensor)
-payload_sensor_count['device_class'] = 'None'
+payload_sensor_count['device_class'] = None
+payload_sensor_count['icon'] = 'mdi:counter'
 payload_sensor_count['unit_of_measurement'] = 'x'
 
 payload_sensor_level = copy.deepcopy(payload_sensor)
-payload_sensor_level['device_class'] = 'None'
-payload_sensor_level['icon'] = 'mdi-percent'
+payload_sensor_level['device_class'] = None
+payload_sensor_level['icon'] = 'mdi:percent'
 payload_sensor_level['unit_of_measurement'] = '%'
+
+payload_mapping = {
+    "setpoint": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
+    "temperature": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
+    "hours": {'ha_type': 'sensor', 'payload': payload_sensor_hours},
+    "count": {'ha_type': 'sensor', 'payload': payload_sensor_count},
+    "level": {'ha_type': 'sensor', 'payload': payload_sensor_level},
+    "state": {'ha_type': 'binary_sensor', 'payload': payload_binary_sensor},
+    "pressure": {'ha_type': 'pressure', 'payload': payload_sensor_pressure},
+}
+
+def build_ha_config_data ():
+    data = []
+    for entity in opentherm_ids:
+        
+        full_name = opentherm_ids[entity][0]
+        if "/" not in full_name:
+            continue
+        otgw_type = full_name.split("/")[-1]
+        name = full_name.split("/")[0]
+        
+        ha_type = payload_mapping[otgw_type]['ha_type']
+        payload = copy.deepcopy(payload_mapping[otgw_type]['payload'])
+
+        payload['name'] = name
+        # need to add the mqtt client name here to make it truely unique
+        payload['unique_id'] = "{}_{}".format('otgw', name)
+        payload['state_topic'] = "{}/{}".format(topic_namespace, full_name)
+        payload = cleanNullTerms(payload)
+        payload = json.dumps(payload)
+        publish_topic = "{}/{}/{}/config".format(ha_publish_namespace, ha_type, name)
+        data.append( {'topic': publish_topic, 'payload': payload})
+
+    return data
 
 
 class OTGWClient(object):
