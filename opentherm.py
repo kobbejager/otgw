@@ -3,12 +3,14 @@ from threading import Thread
 from time import sleep
 import logging
 import collections
+import copy
 
 log = logging.getLogger(__name__)
 
 # Default namespace for the topics. Will be overwritten with the value in
 # config
 topic_namespace="value/otgw"
+ha_publish_namespace="homeassistant/"
 
 # Parse hex string to int
 def hex_int(hex):
@@ -148,9 +150,9 @@ payload_sensor = {
 }
 
 # deepcopy
-payload_binary_sensor = {key: value[:] for key, value in payload_sensor.items()}
-payload_binary_sensor.append(
-    {
+payload_binary_sensor = copy.deepcopy(payload_sensor)
+payload_binary_sensor = {**payload_binary_sensor, 
+    **{
     "availability":
         {
         "payload_available": None,
@@ -160,29 +162,30 @@ payload_binary_sensor.append(
     "off_delay": 0,
     "payload_off": None,
     "payload_on": None,
-    })
+    }
+}
 del payload_binary_sensor["unit_of_measurement"]
 
 # deepcopy
-payload_sensor_temperature = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_temperature = copy.deepcopy(payload_sensor)
 payload_sensor_temperature['device_class'] = 'temperature'
 payload_sensor_temperature['unit_of_measurement'] = 'C'
 
-payload_sensor_hours = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_hours = copy.deepcopy(payload_sensor)
 payload_sensor_hours['device_class'] = 'None'
 payload_sensor_hours['icon'] = 'has:clock'
 payload_sensor_hours['unit_of_measurement'] = 'Hours'
 
-payload_sensor_bar = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_bar = copy.deepcopy(payload_sensor)
 payload_sensor_bar['device_class'] = 'pressure'
 payload_sensor_bar['unit_of_measurement'] = 'Bar'
 
 
-payload_sensor_count = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_count = copy.deepcopy(payload_sensor)
 payload_sensor_count['device_class'] = 'None'
 payload_sensor_count['unit_of_measurement'] = 'x'
 
-payload_sensor_level = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_level = copy.deepcopy(payload_sensor)
 payload_sensor_level['device_class'] = 'None'
 payload_sensor_level['icon'] = 'mdi-percent'
 payload_sensor_level['unit_of_measurement'] = '%'
