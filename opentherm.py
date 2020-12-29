@@ -119,6 +119,75 @@ opentherm_ids = {
 	123: ("dhw_burner_operation_hours/hours",int_msg_generator,)
 }
 
+payload_sensor = {
+    "availability_topic": None,
+    "device":
+        {
+        "connections": None,
+        "identifiers": ["opentherm-gateway", "otgw"],
+        "manufacturer": "Schelte Bron",
+        "model": "otgw-nodo",
+        "name": "OpenTherm Gateway",
+        "sw_version": None,
+        "via_device": None
+        },
+    "device_class": None,
+    "expire_after": None,
+    "force_update": True,
+    "icon": None,
+    "json_attributes_template": None,
+    "json_attributes_topic": None,
+    "name": None,
+    "payload_available": None,
+    "payload_not_available": None,
+    "qos": None,
+    "state_topic": None,
+    "unique_id": None,
+    "unit_of_measurement": None,
+    "value_template": None,
+}
+
+# deepcopy
+payload_binary_sensor = {key: value[:] for key, value in payload_sensor.items()}
+payload_binary_sensor.append(
+    {
+    "availability":
+        {
+        "payload_available": None,
+        "payload_not_available": None,
+        "topic": None,
+        },
+    "off_delay": 0,
+    "payload_off": None,
+    "payload_on": None,
+    })
+del payload_binary_sensor["unit_of_measurement"]
+
+# deepcopy
+payload_sensor_temperature = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_temperature['device_class'] = 'temperature'
+payload_sensor_temperature['unit_of_measurement'] = 'C'
+
+payload_sensor_hours = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_hours['device_class'] = 'None'
+payload_sensor_hours['icon'] = 'has:clock'
+payload_sensor_hours['unit_of_measurement'] = 'Hours'
+
+payload_sensor_bar = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_bar['device_class'] = 'pressure'
+payload_sensor_bar['unit_of_measurement'] = 'Bar'
+
+
+payload_sensor_count = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_count['device_class'] = 'None'
+payload_sensor_count['unit_of_measurement'] = 'x'
+
+payload_sensor_level = {key: value[:] for key, value in payload_sensor.items()}
+payload_sensor_level['device_class'] = 'None'
+payload_sensor_level['icon'] = 'mdi-percent'
+payload_sensor_level['unit_of_measurement'] = '%'
+
+
 class OTGWClient(object):
     r"""
     An abstract OTGW client.
