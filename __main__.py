@@ -162,6 +162,18 @@ def on_otgw_message(message):
         qos=settings['mqtt']['qos'],
         retain=retain)
 
+def send_HA_discovery(data):
+    if args.verbose:
+        log.debug("send HA discovery: %s", payload)
+
+    for entity in data:
+        # Send out messages to the MQTT broker
+        mqtt_client.publish(
+            topic=entity['topic'],
+            payload=entity['payload'],
+            qos=settings['mqtt']['qos'],
+            retain=False)
+
 def is_float(value):
     try:
         float(value)
