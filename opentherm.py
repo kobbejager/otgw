@@ -165,6 +165,53 @@ payload_sensor = {
     "unit_of_measurement": None,
     "value_template": None,
 }
+# deepcopy
+payload_climate = copy.deepcopy(payload_sensor)
+payload_climate = {**payload_climate, 
+    **{
+    "action_template": None,
+    "action_topic": None,
+    "aux_command_topic": None,
+    "aux_state_template": None,
+    "aux_state_topic": None,
+    "away_mode_command_topic": None,
+    "away_mode_state_template": None,
+    "away_mode_state_topic": None,
+    "current_temperature_topic": pub_topic_namespace+'room_temperature/temperature',
+    "current_temperature_template": None,
+    "current_temperature_topic": None,
+    "initial": None,
+    "max_temp": None,
+    "min_temp": None,
+    "mode_command_topic": None,
+    "mode_state_template": "{% if value == '1' %}heat{% else %}off{% endif %}",
+    "mode_state_topic": pub_topic_namespace+'flame_status_ch/state',
+    "modes": ['off', 'heat'],
+    "precision": "0.5",
+    "retain": None,
+    # using temporary allows local thermostat override. use /constant to block
+    # room thermostat input
+    "temperature_command_topic": sub_topic_namespace+'room_setpoint/temporary',
+    "temperature_state_template": None,
+    "temperature_state_topic": pub_topic_namespace+'room_setpoint/setpoint',
+    "temperature_unit": None,
+    "temp_step": "0.5", 
+    "availability":
+        {
+        "payload_available": None,
+        "payload_not_available": None,
+        "topic": None,
+        },
+    "payload_off": 0,
+    "payload_on": 1,
+    }
+}
+del payload_climate["expire_after"]
+del payload_climate["force_update"]
+del payload_climate["icon"]
+del payload_climate["state_topic"]
+del payload_climate["unit_of_measurement"]
+payload_climate['name'] = "Thermostat"
 
 # deepcopy
 payload_binary_sensor = copy.deepcopy(payload_sensor)
