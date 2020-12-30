@@ -168,11 +168,12 @@ def on_otgw_message(message):
         retain=retain)
 
 def send_HA_discovery():
-    if args.verbose:
-        log.debug("send HA discovery ")
 
-    for entity in opentherm.build_ha_config_data():
+    for entity in opentherm.build_ha_config_data(settings):
         # Send out messages to the MQTT broker
+        if args.verbose:
+            log.info("send HA discovery: {} ".format(entity))
+
         mqtt_client.publish(
             topic=entity['topic'],
             payload=entity['payload'],

@@ -138,136 +138,150 @@ def cleanNullTerms(d):
             clean[k] = v
     return clean
 
-payload_sensor = {
-    "availability_topic": pub_topic_namespace,
-    "device":
-        {
-        "connections": None,
-        "identifiers": ["opentherm-gateway"],
-        "manufacturer": "Schelte Bron",
-        "model": "otgw-nodo",
-        "name": "OpenTherm Gateway",
-        "sw_version": None,
-        "via_device": None
-        },
-    "device_class": None,
-    "expire_after": None,
-    "force_update": 'True',
-    "icon": None,
-    "json_attributes_template": None,
-    "json_attributes_topic": None,
-    "name": None,
-    "payload_available": None,
-    "payload_not_available": None,
-    "qos": None,
-    "state_topic": None,
-    "unique_id": None,
-    "unit_of_measurement": None,
-    "value_template": None,
-}
-# deepcopy
-payload_climate = copy.deepcopy(payload_sensor)
-payload_climate = {**payload_climate, 
-    **{
-    "action_template": None,
-    "action_topic": None,
-    "aux_command_topic": None,
-    "aux_state_template": None,
-    "aux_state_topic": None,
-    "away_mode_command_topic": None,
-    "away_mode_state_template": None,
-    "away_mode_state_topic": None,
-    "current_temperature_topic": pub_topic_namespace+'room_temperature/temperature',
-    "current_temperature_template": None,
-    "current_temperature_topic": None,
-    "initial": None,
-    "max_temp": None,
-    "min_temp": None,
-    "mode_command_topic": None,
-    "mode_state_template": "{% if value == '1' %}heat{% else %}off{% endif %}",
-    "mode_state_topic": pub_topic_namespace+'flame_status_ch/state',
-    "modes": ['off', 'heat'],
-    "precision": "0.5",
-    "retain": None,
-    # using temporary allows local thermostat override. use /constant to block
-    # room thermostat input
-    "temperature_command_topic": sub_topic_namespace+'room_setpoint/temporary',
-    "temperature_state_template": None,
-    "temperature_state_topic": pub_topic_namespace+'room_setpoint/setpoint',
-    "temperature_unit": None,
-    "temp_step": "0.5", 
-    "availability":
-        {
+
+def build_ha_config_data (config):
+    payload_sensor = {
+        "availability_topic": pub_topic_namespace,
+        "device":
+            {
+            "connections": None,
+            "identifiers": ["opentherm-gateway"],
+            "manufacturer": "Schelte Bron",
+            "model": "otgw-nodo",
+            "name": "OpenTherm Gateway",
+            "sw_version": None,
+            "via_device": None
+            },
+        "device_class": None,
+        "expire_after": None,
+        "force_update": 'True',
+        "icon": None,
+        "json_attributes_template": None,
+        "json_attributes_topic": None,
+        "name": None,
         "payload_available": None,
         "payload_not_available": None,
-        "topic": None,
-        },
-    "payload_off": 0,
-    "payload_on": 1,
+        "qos": None,
+        "state_topic": None,
+        "unique_id": None,
+        "unit_of_measurement": None,
+        "value_template": None,
     }
-}
-del payload_climate["expire_after"]
-del payload_climate["force_update"]
-del payload_climate["icon"]
-del payload_climate["state_topic"]
-del payload_climate["unit_of_measurement"]
-payload_climate['name'] = "Thermostat"
-
-# deepcopy
-payload_binary_sensor = copy.deepcopy(payload_sensor)
-payload_binary_sensor = {**payload_binary_sensor, 
-    **{
-    "availability":
-        {
-        "payload_available": None,
-        "payload_not_available": None,
-        "topic": None,
-        },
-    "off_delay": None,
-    "payload_off": 0,
-    "payload_on": 1,
+    # deepcopy
+    payload_climate = copy.deepcopy(payload_sensor)
+    payload_climate = {**payload_climate, 
+        **{
+        # "action_template": None,
+        # "action_topic": None,
+        # "aux_command_topic": None,
+        # "aux_state_template": None,
+        # "aux_state_topic": None,
+        # "away_mode_command_topic": None,
+        # "away_mode_state_template": None,
+        # "away_mode_state_topic": None,
+        "current_temperature_topic": pub_topic_namespace+'/room_temperature/temperature',
+        "current_temperature_template": None,
+        "initial": '18',
+        "max_temp": '24',
+        "min_temp": '16',
+        # "mode_command_topic": None,
+        "mode_state_template": "{% if value == '1' %}heat{% else %}off{% endif %}",
+        "mode_state_topic": pub_topic_namespace+'/flame_status_ch/state',
+        "modes": ['off', 'heat'],
+        "precision": 0.1,
+        "retain": None,
+        "send_if_off": None,
+        # using temporary allows local thermostat override. use /constant to block
+        # room thermostat input
+        "temperature_command_topic": sub_topic_namespace+'/room_setpoint/temporary',
+        "temperature_state_template": None,
+        "temperature_state_topic": pub_topic_namespace+'/room_setpoint/setpoint',
+        "temperature_unit": "C",
+        "temp_step": "0.5", 
+        "availability":
+            {
+            "payload_available": None,
+            "payload_not_available": None,
+            "topic": None,
+            },
+        "payload_off": 0,
+        "payload_on": 1,
+        }
     }
-}
-del payload_binary_sensor["unit_of_measurement"]
-payload_binary_sensor['device_class'] = 'heat'
+    del payload_climate["expire_after"]
+    del payload_climate["force_update"]
+    del payload_climate["icon"]
+    del payload_climate["state_topic"]
+    del payload_climate["unit_of_measurement"]
 
-# deepcopy
-payload_sensor_temperature = copy.deepcopy(payload_sensor)
-payload_sensor_temperature['device_class'] = 'temperature'
-payload_sensor_temperature['unit_of_measurement'] = 'C'
+    # deepcopy
+    payload_binary_sensor = copy.deepcopy(payload_sensor)
+    payload_binary_sensor = {**payload_binary_sensor, 
+        **{
+        "availability":
+            {
+            "payload_available": None,
+            "payload_not_available": None,
+            "topic": None,
+            },
+        "off_delay": None,
+        "payload_off": 0,
+        "payload_on": 1,
+        }
+    }
+    del payload_binary_sensor["unit_of_measurement"]
+    payload_binary_sensor['device_class'] = 'heat'
 
-payload_sensor_hours = copy.deepcopy(payload_sensor)
-payload_sensor_hours['device_class'] = None
-payload_sensor_hours['icon'] = 'mdi:clock'
-payload_sensor_hours['unit_of_measurement'] = 'Hours'
+    # deepcopy
+    payload_sensor_temperature = copy.deepcopy(payload_sensor)
+    payload_sensor_temperature['device_class'] = 'temperature'
+    payload_sensor_temperature['unit_of_measurement'] = 'C'
 
-payload_sensor_pressure = copy.deepcopy(payload_sensor)
-payload_sensor_pressure['device_class'] = 'pressure'
-payload_sensor_pressure['unit_of_measurement'] = 'Bar'
+    payload_sensor_hours = copy.deepcopy(payload_sensor)
+    payload_sensor_hours['device_class'] = None
+    payload_sensor_hours['icon'] = 'mdi:clock'
+    payload_sensor_hours['unit_of_measurement'] = 'Hours'
+
+    payload_sensor_pressure = copy.deepcopy(payload_sensor)
+    payload_sensor_pressure['device_class'] = 'pressure'
+    payload_sensor_pressure['unit_of_measurement'] = 'Bar'
 
 
-payload_sensor_count = copy.deepcopy(payload_sensor)
-payload_sensor_count['device_class'] = None
-payload_sensor_count['icon'] = 'mdi:counter'
-payload_sensor_count['unit_of_measurement'] = 'x'
+    payload_sensor_count = copy.deepcopy(payload_sensor)
+    payload_sensor_count['device_class'] = None
+    payload_sensor_count['icon'] = 'mdi:counter'
+    payload_sensor_count['unit_of_measurement'] = 'x'
 
-payload_sensor_level = copy.deepcopy(payload_sensor)
-payload_sensor_level['device_class'] = None
-payload_sensor_level['icon'] = 'mdi:percent'
-payload_sensor_level['unit_of_measurement'] = '%'
+    payload_sensor_level = copy.deepcopy(payload_sensor)
+    payload_sensor_level['device_class'] = None
+    payload_sensor_level['icon'] = 'mdi:percent'
+    payload_sensor_level['unit_of_measurement'] = '%'
 
-payload_mapping = {
-    "setpoint": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
-    "temperature": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
-    "hours": {'ha_type': 'sensor', 'payload': payload_sensor_hours},
-    "count": {'ha_type': 'sensor', 'payload': payload_sensor_count},
-    "level": {'ha_type': 'sensor', 'payload': payload_sensor_level},
-    "state": {'ha_type': 'binary_sensor', 'payload': payload_binary_sensor},
-    "pressure": {'ha_type': 'pressure', 'payload': payload_sensor_pressure},
-}
+    payload_mapping = {
+        "setpoint": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
+        "temperature": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
+        "hours": {'ha_type': 'sensor', 'payload': payload_sensor_hours},
+        "count": {'ha_type': 'sensor', 'payload': payload_sensor_count},
+        "level": {'ha_type': 'sensor', 'payload': payload_sensor_level},
+        "state": {'ha_type': 'binary_sensor', 'payload': payload_binary_sensor},
+        "pressure": {'ha_type': 'pressure', 'payload': payload_sensor_pressure},
+    }
 
-def build_ha_config_data ():
+
+    #########
+    #########
+    #########
+
     data = []
+
+    # data.append( {'topic': "{}/climate/thermostat/config".format(ha_publish_namespace), 'payload': ''})
+    # add thermostat entity
+    payload_climate['name'] = "{}_Thermostat".format(config['mqtt']['client_id'])
+    payload_climate['unique_id'] = "{}_thermostat".format(config['mqtt']['client_id'])
+    data.append( {'topic': "{}/climate/thermostat/config".format(ha_publish_namespace), 'payload': json.dumps(cleanNullTerms(payload_climate)) })
+
+    # todo: setpoint entities for the water temp setpoints
+
     for entity in opentherm_ids:
         
         full_name = opentherm_ids[entity][0]
@@ -279,9 +293,9 @@ def build_ha_config_data ():
         ha_type = payload_mapping[otgw_type]['ha_type']
         payload = copy.deepcopy(payload_mapping[otgw_type]['payload'])
 
-        payload['name'] = name
+        payload['name'] = "{}_{}".format(config['mqtt']['client_id'],name)
         # need to add the mqtt client name here to make it truely unique
-        payload['unique_id'] = "{}_{}".format('otgw', name)
+        payload['unique_id'] = "{}_{}".format(config['mqtt']['client_id'],name)
         payload['state_topic'] = "{}/{}".format(pub_topic_namespace, full_name)
         payload = cleanNullTerms(payload)
         payload = json.dumps(payload)
