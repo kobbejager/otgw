@@ -72,7 +72,8 @@ with open(args.config) as f:
         settings['mqtt'].update(overrides['mqtt'])
 
 # Set the namespace of the mqtt messages from the settings
-opentherm.topic_namespace=settings['mqtt']['pub_topic_namespace']
+opentherm.pub_topic_namespace=settings['mqtt']['pub_topic_namespace']
+opentherm.sub_topic_namespace=settings['mqtt']['sub_topic_namespace']
 
 # Set up logging
 log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -91,7 +92,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     mqtt_client.subscribe('{}/#'.format(settings['mqtt']['sub_topic_namespace']))
     mqtt_client.subscribe('{}'.format(settings['mqtt']['sub_topic_namespace']))
     mqtt_client.publish(
-        topic=opentherm.topic_namespace,
+        topic=opentherm.pub_topic_namespace,
         payload="online",
         qos=settings['mqtt']['qos'],
         retain=True)
@@ -144,7 +145,7 @@ def on_otgw_message(message):
         log.error("interal malformed message received - message was probably incorrectly parsed")
         return
     # Force retain for device state
-    if message[0] == opentherm.topic_namespace and (message[1] == 'online' or message[1] == 'offline'):
+    if message[0] == opentherm.pub_topic_namespace and (message[1] == 'online' or message[1] == 'offline'):
         retain=True
     else:
         retain=settings['mqtt']['retain']
@@ -210,7 +211,7 @@ if settings['mqtt']['username']:
 # The will makes sure the device registers as offline when the connection
 # is lost
 mqtt_client.will_set(
-    topic=opentherm.topic_namespace,
+    topic=opentherm.pub_topic_namespace,
     payload="offline",
     qos=settings['mqtt']['qos'],
     retain=True)

@@ -9,7 +9,8 @@ log = logging.getLogger(__name__)
 
 # Default namespace for the topics. Will be overwritten with the value in
 # config
-topic_namespace="otgw/value"
+pub_topic_namespace="otgw/value"
+sub_topic_namespace="otgw/set"
 ha_publish_namespace="homeassistant"
 
 # Parse hex string to int
@@ -32,13 +33,13 @@ def flags_msg_generator(ot_id, val):
 
     Returns a generator for the messages
     """
-    yield ("{}/{}".format(topic_namespace, ot_id), val, )
+    yield ("{}/{}".format(pub_topic_namespace, ot_id), val, )
     if(ot_id == "flame_status"):
-        yield ("{}/flame_status_ch/state".format(topic_namespace),
+        yield ("{}/flame_status_ch/state".format(pub_topic_namespace),
                int(val & ( 1 << 1 ) > 0), )
-        yield ("{}/flame_status_dhw/state".format(topic_namespace),
+        yield ("{}/flame_status_dhw/state".format(pub_topic_namespace),
                int(val & ( 1 << 2 ) > 0), )
-        yield ("{}/flame_status_bit/state".format(topic_namespace),
+        yield ("{}/flame_status_bit/state".format(pub_topic_namespace),
                int(val & ( 1 << 3 ) > 0), )
 
 def float_msg_generator(ot_id, val):
@@ -47,7 +48,7 @@ def float_msg_generator(ot_id, val):
 
     Returns a generator for the messages
     """
-    yield ("{}/{}".format(topic_namespace, ot_id), round(val/float(256), 2), )
+    yield ("{}/{}".format(pub_topic_namespace, ot_id), round(val/float(256), 2), )
 
 def int_msg_generator(ot_id, val):
     r"""
@@ -55,7 +56,7 @@ def int_msg_generator(ot_id, val):
 
     Returns a generator for the messages
     """
-    yield ("{}/{}".format(topic_namespace, ot_id), val, )
+    yield ("{}/{}".format(pub_topic_namespace, ot_id), val, )
 
 def other_msg_generator(source, ttype, res, did, data):
     r"""
@@ -64,7 +65,7 @@ def other_msg_generator(source, ttype, res, did, data):
 
     Returns a generator for the messages
     """
-    yield ("{}/{}/{}/{}/{}/{}".format(topic_namespace, 'unknown', source, ttype, res, did), str(data), )
+    yield ("{}/{}/{}/{}/{}/{}".format(pub_topic_namespace, 'unknown', source, ttype, res, did), str(data), )
 
 def get_messages(message):
     r"""
@@ -138,7 +139,7 @@ def cleanNullTerms(d):
     return clean
 
 payload_sensor = {
-    "availability_topic": topic_namespace,
+    "availability_topic": pub_topic_namespace,
     "device":
         {
         "connections": None,
@@ -234,7 +235,7 @@ def build_ha_config_data ():
         payload['name'] = name
         # need to add the mqtt client name here to make it truely unique
         payload['unique_id'] = "{}_{}".format('otgw', name)
-        payload['state_topic'] = "{}/{}".format(topic_namespace, full_name)
+        payload['state_topic'] = "{}/{}".format(pub_topic_namespace, full_name)
         payload = cleanNullTerms(payload)
         payload = json.dumps(payload)
         publish_topic = "{}/{}/{}/config".format(ha_publish_namespace, ha_type, name)
@@ -344,10 +345,10 @@ class OTGWClient(object):
         while self._worker_running:
             try:
                 self.open()
-                self._listener((topic_namespace, 'online'))
+                self._listener((pub_topic_namespace, 'online'))
                 break
             except Exception:
-                self._listener((topic_namespace, 'offline'))
+                self._listener((pub_topic_namespace, 'offline'))
                 log.warning("Waiting %d seconds before retrying", reconnect_pause)
                 sleep(reconnect_pause)
 
