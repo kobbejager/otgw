@@ -31,7 +31,8 @@ settings = {
         "pub_topic_namespace": "value/otgw",
         "sub_topic_namespace": "set/otgw",
         "retain": False,
-        "changed_messages_only": False
+        "changed_messages_only": False,
+        "homeassistant": None
     }
 }
 
@@ -220,6 +221,9 @@ otgw_type = {
                               .OTGWTcpClient,
                                   # This is actually not implemented yet
 }[settings['otgw']['type']]()
+
+if settings['mqtt']['homeassistant'] or True:
+    settings['ha_publish'] = send_HA_discovery
 
 # Create the actual instance of the client
 otgw_client = otgw_type(on_otgw_message, **settings['otgw'])
