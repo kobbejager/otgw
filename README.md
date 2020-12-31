@@ -86,10 +86,10 @@ To install this script as a daemon, run the following commands (on a Debian-base
 By default, the service publishes messages to the following MQTT topics:
 
 - value/otgw => _The status of the service_
-- value/otgw/flame_status
-- value/otgw/flame_status_ch
-- value/otgw/flame_status_dhw
-- value/otgw/flame_status_bit
+- value/otgw/master_status
+- value/otgw/ch_enabled
+- value/otgw/dhw_enabled
+- value/otgw/cooling_enabled
 - value/otgw/control_setpoint
 - value/otgw/remote_override_setpoint
 - value/otgw/max_relative_modulation_level

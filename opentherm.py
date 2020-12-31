@@ -34,12 +34,12 @@ def flags_msg_generator(ot_id, val):
     Returns a generator for the messages
     """
     yield ("{}/{}".format(pub_topic_namespace, ot_id), val, )
-    if(ot_id == "flame_status"):
-        yield ("{}/flame_status_ch/state".format(pub_topic_namespace),
+    if(ot_id == "master_status"):
+        yield ("{}/ch_enabled/state".format(pub_topic_namespace),
                int(val & ( 1 << 1 ) > 0), )
-        yield ("{}/flame_status_dhw/state".format(pub_topic_namespace),
+        yield ("{}/dhw_enabled/state".format(pub_topic_namespace),
                int(val & ( 1 << 2 ) > 0), )
-        yield ("{}/flame_status_bit/state".format(pub_topic_namespace),
+        yield ("{}/cooling_enabled/state".format(pub_topic_namespace),
                int(val & ( 1 << 3 ) > 0), )
 
 def float_msg_generator(ot_id, val):
@@ -98,7 +98,7 @@ def get_messages(message):
 # referenced generators have to be assigned first
 opentherm_ids = {
     # flame status is special case... multiple bits of data. see flags_msg_generator
-	0:   ("flame_status",flags_msg_generator,),
+	0:   ("master_status",flags_msg_generator,),
 	1:   ("control_setpoint/setpoint",float_msg_generator,),
 	9:   ("remote_override_setpoint/setpoint",float_msg_generator,),
 	14:  ("max_relative_modulation_level/level",float_msg_generator,),
@@ -120,9 +120,9 @@ opentherm_ids = {
 	121: ("ch_pump_operation_hours/hours",int_msg_generator,),
 	122: ("dhw_pump_valve_operation_hours/hours",int_msg_generator,),
 	123: ("dhw_burner_operation_hours/hours",int_msg_generator,),
-    997: ("flame_status_ch/state",int_msg_generator,),
-    998: ("flame_status_dhw/state",int_msg_generator,),
-    999: ("flame_status_bit/state",int_msg_generator,)
+    997: ("ch_enabled/state",int_msg_generator,),
+    998: ("dhw_enabled/state",int_msg_generator,),
+    999: ("cooling_enabled/state",int_msg_generator,)
 }
 
 
@@ -145,10 +145,10 @@ def build_ha_config_data (config):
         "device":
             {
             "connections": None,
-            "identifiers": ["opentherm-gateway"],
+            "identifiers": ["{}-{}:{}".format(config['mqtt']['client_id'], config['otgw']['host'], config['otgw']['port'])],
             "manufacturer": "Schelte Bron",
             "model": "otgw-nodo",
-            "name": "OpenTherm Gateway",
+            "name": "OpenTherm Gateway ({})".format(config['mqtt']['client_id']),
             "sw_version": None,
             "via_device": None
             },
@@ -186,7 +186,7 @@ def build_ha_config_data (config):
         "min_temp": '16',
         # "mode_command_topic": None,
         "mode_state_template": "{% if value == '1' %}heat{% else %}off{% endif %}",
-        "mode_state_topic": pub_topic_namespace+'/flame_status_ch/state',
+        "mode_state_topic": pub_topic_namespace+'/ch_enabled/state',
         "modes": ['off', 'heat'],
         "precision": 0.1,
         "retain": None,
@@ -278,7 +278,7 @@ def build_ha_config_data (config):
     # add thermostat entity
     payload_climate['name'] = "{}_Thermostat".format(config['mqtt']['client_id'])
     payload_climate['unique_id'] = "{}_thermostat".format(config['mqtt']['client_id'])
-    data.append( {'topic': "{}/climate/thermostat/config".format(ha_publish_namespace), 'payload': json.dumps(cleanNullTerms(payload_climate)) })
+    data.append( {'topic': "{}/climate/{}/thermostat/config".format(ha_publish_namespace, payload_climate['unique_id'] ), 'payload': json.dumps(cleanNullTerms(payload_climate)) })
 
     # todo: setpoint entities for the water temp setpoints
 
@@ -297,9 +297,9 @@ def build_ha_config_data (config):
         # need to add the mqtt client name here to make it truely unique
         payload['unique_id'] = "{}_{}".format(config['mqtt']['client_id'],name)
         payload['state_topic'] = "{}/{}".format(pub_topic_namespace, full_name)
+        publish_topic = "{}/{}/{}/{}/config".format(ha_publish_namespace, ha_type, payload['unique_id'], name)
         payload = cleanNullTerms(payload)
         payload = json.dumps(payload)
-        publish_topic = "{}/{}/{}/config".format(ha_publish_namespace, ha_type, name)
         data.append( {'topic': publish_topic, 'payload': payload})
 
     return data
