@@ -34,13 +34,39 @@ def flags_msg_generator(ot_id, val):
     Returns a generator for the messages
     """
     yield ("{}/{}".format(pub_topic_namespace, ot_id), val, )
-    if(ot_id == "master_status"):
+    if(ot_id == "master_slave_status"):
         yield ("{}/ch_enabled/state".format(pub_topic_namespace),
                int(val & ( 1 << 1 ) > 0), )
         yield ("{}/dhw_enabled/state".format(pub_topic_namespace),
                int(val & ( 1 << 2 ) > 0), )
         yield ("{}/cooling_enabled/state".format(pub_topic_namespace),
                int(val & ( 1 << 3 ) > 0), )
+        yield ("{}/otc_active/state".format(pub_topic_namespace),
+               int(val & ( 1 << 4 ) > 0), )
+        yield ("{}/ch2_enabled/state".format(pub_topic_namespace),
+               int(val & ( 1 << 5 ) > 0), )
+        yield ("{}/bit_5/state".format(pub_topic_namespace),
+               int(val & ( 1 << 6 ) > 0), )
+        yield ("{}/bit_6/state".format(pub_topic_namespace),
+               int(val & ( 1 << 7 ) > 0), )
+        yield ("{}/bit_7/state".format(pub_topic_namespace),
+               int(val & ( 1 << 8 ) > 0), )
+        yield ("{}/fault/state".format(pub_topic_namespace),
+               int(val & ( 1 << 9 ) > 0), )
+        yield ("{}/ch_active/state".format(pub_topic_namespace),
+               int(val & ( 1 << 10 ) > 0), )
+        yield ("{}/dhw_active/state".format(pub_topic_namespace),
+               int(val & ( 1 << 11 ) > 0), )
+        yield ("{}/flame_on/state".format(pub_topic_namespace),
+               int(val & ( 1 << 12 ) > 0), )
+        yield ("{}/cooling_active/state".format(pub_topic_namespace),
+               int(val & ( 1 << 13 ) > 0), )
+        yield ("{}/ch2_active/state".format(pub_topic_namespace),
+               int(val & ( 1 << 14 ) > 0), )
+        yield ("{}/diagnostic_indication/state".format(pub_topic_namespace),
+               int(val & ( 1 << 15 ) > 0), )
+        yield ("{}/bit_15/state".format(pub_topic_namespace),
+               int(val & ( 1 << 16 ) > 0), )
 
 def float_msg_generator(ot_id, val):
     r"""
@@ -98,7 +124,7 @@ def get_messages(message):
 # referenced generators have to be assigned first
 opentherm_ids = {
     # flame status is special case... multiple bits of data. see flags_msg_generator
-	0:   ("master_status",flags_msg_generator,),
+	0:   ("master_slave_status",flags_msg_generator,),
 	1:   ("control_setpoint/setpoint",float_msg_generator,),
 	9:   ("remote_override_setpoint/setpoint",float_msg_generator,),
 	14:  ("max_relative_modulation_level/level",float_msg_generator,),
@@ -120,9 +146,22 @@ opentherm_ids = {
 	121: ("ch_pump_operation_hours/hours",int_msg_generator,),
 	122: ("dhw_pump_valve_operation_hours/hours",int_msg_generator,),
 	123: ("dhw_burner_operation_hours/hours",int_msg_generator,),
-    997: ("ch_enabled/state",int_msg_generator,),
-    998: ("dhw_enabled/state",int_msg_generator,),
-    999: ("cooling_enabled/state",int_msg_generator,)
+    900: ("ch_enabled/state",int_msg_generator,),
+    901: ("dhw_enabled/state",int_msg_generator,),
+    902: ("cooling_enabled/state",int_msg_generator,),
+    903: ("otc_active/state",int_msg_generator,),
+    904: ("ch2_enabled/state",int_msg_generator,),
+    905: ("bit_5/state",int_msg_generator,),
+    906: ("bit_6/state",int_msg_generator,),
+    907: ("bit_7/state",int_msg_generator,),
+    908: ("fault/state",int_msg_generator,),
+    909: ("ch_active/state",int_msg_generator,),
+    910: ("dhw_active/state",int_msg_generator,),
+    911: ("flame_on/state",int_msg_generator,),
+    912: ("cooling_active/state",int_msg_generator,),
+    913: ("ch2_active/state",int_msg_generator,),
+    914: ("diagnostic_indication/state",int_msg_generator,),
+    915: ("bit_15/state",int_msg_generator,),
 }
 
 
