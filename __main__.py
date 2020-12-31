@@ -6,6 +6,8 @@ import logging
 import signal
 import json
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
+import sys
 
 # Values used to parse boolean values of incoming messages
 true_values=('True', 'true', '1', 'y', 'yes')
@@ -41,6 +43,7 @@ parser = argparse.ArgumentParser(description="Python OTGW MQTT bridge")
 parser.add_argument("-c", "--config", default="config.json", help="Configuration file (default: %(default)s)")
 parser.add_argument("-l", "--loglevel", default="INFO", help="Event level to log (default: %(default)s)")
 parser.add_argument("-v", "--verbose", action='store_true', help="Enable MQTT logger")
+parser.add_argument("-ha", "--publish-ha-config-only", action='store_true', help="Send config to HA via MQTT w/o connecting to the OTGW")
 args = parser.parse_args()
 # print(args)
 
@@ -167,18 +170,48 @@ def on_otgw_message(message):
         qos=settings['mqtt']['qos'],
         retain=retain)
 
-def send_HA_discovery():
+def send_HA_discovery(publish_ha_config_only: bool = False):
+    log.error("sub in mod 2: {}".format(opentherm.sub_topic_namespace))
 
-    for entity in opentherm.build_ha_config_data(settings):
-        # Send out messages to the MQTT broker
-        if args.verbose:
-            log.info("send HA discovery: {} ".format(entity))
+    messages = opentherm.build_ha_config_data(settings)
 
-        mqtt_client.publish(
-            topic=entity['topic'],
-            payload=entity['payload'],
-            qos=settings['mqtt']['qos'],
-            retain=False)
+    if publish_ha_config_only:
+        log.info("send HA discovery via publish.multiple")
+        connection_settings= dict(
+            # qos=settings['mqtt']['qos'],
+            client_id=settings['mqtt']['client_id'],
+            # retain=False,
+            hostname=settings['mqtt']['host'],
+            port=settings['mqtt']['port'],
+            keepalive=settings['mqtt']['keepalive'],
+            # bind_address=settings['mqtt']['bind_address']
+            )
+
+        if settings['mqtt']['username']:
+            connection_settings.update(
+                dict(
+                    username=settings['mqtt']['username'], 
+                    password=settings['mqtt']['password']
+                    )
+                )
+
+        publish.multiple(
+            msgs=messages,
+            **connection_settings
+        )
+    else:
+        log.info("send HA discovery via mqtt_client")
+
+        for entity in messages:
+            # Send out messages to the MQTT broker
+            if args.verbose:
+                log.debug("send HA discovery: {} ".format(entity))
+            mqtt_client.publish(
+                topic=entity['topic'],
+                payload=entity['payload'],
+                qos=settings['mqtt']['qos'],
+                retain=False)
+
 
 def is_float(value):
     try:
@@ -195,6 +228,18 @@ def is_int(value):
         return False
 
 log.info("Initializing MQTT")
+
+# publish config to HA
+# if settings['mqtt']['homeassistant']:
+    # log.info("publishing HA config")
+    # send_HA_discovery()
+if args.publish_ha_config_only:
+    if not settings['mqtt']['homeassistant']:
+        log.error('homeassistant is not enabled in the config!')
+    else:
+        send_HA_discovery(publish_ha_config_only=True)
+        log.error("pushed config -- quit")
+    sys.exit(0)
 
 # Set up paho-mqtt
 mqtt_client = mqtt.Client(

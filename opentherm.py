@@ -35,38 +35,19 @@ def flags_msg_generator(ot_id, val):
     """
     yield ("{}/{}".format(pub_topic_namespace, ot_id), val, )
     if(ot_id == "master_slave_status"):
-        yield ("{}/ch_enabled/state".format(pub_topic_namespace),
-               int(val & ( 1 << 1 ) > 0), )
-        yield ("{}/dhw_enabled/state".format(pub_topic_namespace),
-               int(val & ( 1 << 2 ) > 0), )
-        yield ("{}/cooling_enabled/state".format(pub_topic_namespace),
-               int(val & ( 1 << 3 ) > 0), )
-        yield ("{}/otc_active/state".format(pub_topic_namespace),
-               int(val & ( 1 << 4 ) > 0), )
-        yield ("{}/ch2_enabled/state".format(pub_topic_namespace),
-               int(val & ( 1 << 5 ) > 0), )
-        yield ("{}/bit_5/state".format(pub_topic_namespace),
-               int(val & ( 1 << 6 ) > 0), )
-        yield ("{}/bit_6/state".format(pub_topic_namespace),
-               int(val & ( 1 << 7 ) > 0), )
-        yield ("{}/bit_7/state".format(pub_topic_namespace),
-               int(val & ( 1 << 8 ) > 0), )
-        yield ("{}/fault/state".format(pub_topic_namespace),
-               int(val & ( 1 << 9 ) > 0), )
-        yield ("{}/ch_active/state".format(pub_topic_namespace),
-               int(val & ( 1 << 10 ) > 0), )
-        yield ("{}/dhw_active/state".format(pub_topic_namespace),
-               int(val & ( 1 << 11 ) > 0), )
-        yield ("{}/flame_on/state".format(pub_topic_namespace),
-               int(val & ( 1 << 12 ) > 0), )
-        yield ("{}/cooling_active/state".format(pub_topic_namespace),
-               int(val & ( 1 << 13 ) > 0), )
-        yield ("{}/ch2_active/state".format(pub_topic_namespace),
-               int(val & ( 1 << 14 ) > 0), )
-        yield ("{}/diagnostic_indication/state".format(pub_topic_namespace),
-               int(val & ( 1 << 15 ) > 0), )
-        yield ("{}/bit_15/state".format(pub_topic_namespace),
-               int(val & ( 1 << 16 ) > 0), )
+
+        ####
+        # data is 2 byte
+        # 0000 0000
+        # |       |
+        # master   slave
+        ####
+
+        for bit, bit_name in master_slave_status_bits.items():
+
+            yield ("{}/{}".format(pub_topic_namespace, bit_name),
+                   int(val & ( 1 << bit ) > 0), )
+
 
 def float_msg_generator(ot_id, val):
     r"""
@@ -146,24 +127,27 @@ opentherm_ids = {
 	121: ("ch_pump_operation_hours/hours",int_msg_generator,),
 	122: ("dhw_pump_valve_operation_hours/hours",int_msg_generator,),
 	123: ("dhw_burner_operation_hours/hours",int_msg_generator,),
-    900: ("ch_enabled/state",int_msg_generator,),
-    901: ("dhw_enabled/state",int_msg_generator,),
-    902: ("cooling_enabled/state",int_msg_generator,),
-    903: ("otc_active/state",int_msg_generator,),
-    904: ("ch2_enabled/state",int_msg_generator,),
-    905: ("bit_5/state",int_msg_generator,),
-    906: ("bit_6/state",int_msg_generator,),
-    907: ("bit_7/state",int_msg_generator,),
-    908: ("fault/state",int_msg_generator,),
-    909: ("ch_active/state",int_msg_generator,),
-    910: ("dhw_active/state",int_msg_generator,),
-    911: ("flame_on/state",int_msg_generator,),
-    912: ("cooling_active/state",int_msg_generator,),
-    913: ("ch2_active/state",int_msg_generator,),
-    914: ("diagnostic_indication/state",int_msg_generator,),
-    915: ("bit_15/state",int_msg_generator,),
 }
 
+# { <bit>, <name>}
+master_slave_status_bits = {
+    0:  "fault/state",
+    1:  "ch_active/state",
+    2:  "dhw_active/state",
+    3:  "flame_on/state",
+    4:  "cooling_active/state",
+    5:  "ch2_active/state",
+    6:  "diagnostic_indication/state",
+    7:  "bit_7/state",
+    8:  "ch_enabled/state",
+    9:  "dhw_enabled/state",
+    10: "cooling_enabled/state",
+    11: "otc_active/state",
+    12: "ch2_enabled/state",
+    13: "bit_13/state",
+    14: "bit_14/state",
+    15: "bit_15/state",
+    }
 
 
 def cleanNullTerms(d):
@@ -319,15 +303,24 @@ def build_ha_config_data (config):
     payload_climate['unique_id'] = "{}_thermostat".format(config['mqtt']['client_id'])
     data.append( {'topic': "{}/climate/{}/thermostat/config".format(ha_publish_namespace, payload_climate['unique_id'] ), 'payload': json.dumps(cleanNullTerms(payload_climate)) })
 
+    # ID's below are fictive and only used for easy iteration below
+
+    # build list of all entities, use their names
+    entity_list = []
+    entity_list += [opentherm_ids[x][0] for x in opentherm_ids]                         # opentherm_ids full names
+    entity_list += [master_slave_status_bits[x] for x in master_slave_status_bits]      # master_slave_status_bits full names
+
     # todo: setpoint entities for the water temp setpoints
 
-    for entity in opentherm_ids:
+    for full_name in entity_list:
         
-        full_name = opentherm_ids[entity][0]
+        # dont include id 0: master_slave_status
         if "/" not in full_name:
             continue
-        otgw_type = full_name.split("/")[-1]
-        name = full_name.split("/")[0]
+
+        # otgw_type = full_name.split("/")[-1]
+        # name = full_name.split("/")[0]
+        name, otgw_type = full_name.split("/")
         
         ha_type = payload_mapping[otgw_type]['ha_type']
         payload = copy.deepcopy(payload_mapping[otgw_type]['payload'])
