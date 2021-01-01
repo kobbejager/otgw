@@ -287,7 +287,7 @@ def build_ha_config_data (config):
         "count": {'ha_type': 'sensor', 'payload': payload_sensor_count},
         "level": {'ha_type': 'sensor', 'payload': payload_sensor_level},
         "state": {'ha_type': 'binary_sensor', 'payload': payload_binary_sensor},
-        "pressure": {'ha_type': 'pressure', 'payload': payload_sensor_pressure},
+        "pressure": {'ha_type': 'sensor', 'payload': payload_sensor_pressure},
     }
 
 
@@ -332,7 +332,7 @@ def build_ha_config_data (config):
         publish_topic = "{}/{}/{}/{}/config".format(ha_publish_namespace, ha_type, payload['unique_id'], name)
         payload = cleanNullTerms(payload)
         payload = json.dumps(payload)
-        data.append( {'topic': publish_topic, 'payload': payload})
+        data.append( {'topic': publish_topic, 'payload': payload, 'retain':'True'})
 
     return data
 

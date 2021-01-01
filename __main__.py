@@ -210,7 +210,7 @@ def send_HA_discovery(publish_ha_config_only: bool = False):
                 topic=entity['topic'],
                 payload=entity['payload'],
                 qos=settings['mqtt']['qos'],
-                retain=False)
+                retain=True)
 
 
 def is_float(value):
