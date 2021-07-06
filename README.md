@@ -30,8 +30,8 @@ To use the serial connection to the OTGW, use a config.json like the following:
         "username": null,
         "password": null,
         "qos": 0,
-        "pub_topic_namespace": "value/otgw",
-        "sub_topic_namespace": "set/otgw"
+        "pub_topic_namespace": "otgw/value",
+        "sub_topic_namespace": "otgw/set"
     }
 }
 ```
@@ -85,44 +85,47 @@ To install this script as a daemon, run the following commands (on a Debian-base
 ### Publish topics
 By default, the service publishes messages to the following MQTT topics:
 
-- value/otgw => _The status of the service_
-- value/otgw/flame_status
-- value/otgw/flame_status_ch
-- value/otgw/flame_status_dhw
-- value/otgw/flame_status_bit
-- value/otgw/control_setpoint
-- value/otgw/remote_override_setpoint
-- value/otgw/max_relative_modulation_level
-- value/otgw/room_setpoint
-- value/otgw/relative_modulation_level
-- value/otgw/ch_water_pressure
-- value/otgw/room_temperature
-- value/otgw/boiler_water_temperature
-- value/otgw/dhw_temperature
-- value/otgw/outside_temperature
-- value/otgw/return_water_temperature
-- value/otgw/dhw_setpoint
-- value/otgw/max_ch_water_setpoint
-- value/otgw/burner_starts
-- value/otgw/ch_pump_starts
-- value/otgw/dhw_pump_starts
-- value/otgw/dhw_burner_starts
-- value/otgw/burner_operation_hours
-- value/otgw/ch_pump_operation_hours
-- value/otgw/dhw_pump_valve_operation_hours
-- value/otgw/dhw_burner_operation_hours
+- otgw/value => _The status of the service_
+- otgw/value/master_slave_status
+- otgw/value/ch_enabled
+- otgw/value/dhw_enabled
+- otgw/value/cooling_enabled
+- otgw/value/control_setpoint
+- otgw/value/remote_override_setpoint
+- otgw/value/max_relative_modulation_level
+- otgw/value/room_setpoint
+- otgw/value/relative_modulation_level
+- otgw/value/ch_water_pressure
+- otgw/value/room_temperature
+- otgw/value/boiler_water_temperature
+- otgw/value/dhw_temperature
+- otgw/value/outside_temperature
+- otgw/value/return_water_temperature
+- otgw/value/dhw_setpoint
+- otgw/value/max_ch_water_setpoint
+- otgw/value/burner_starts
+- otgw/value/ch_pump_starts
+- otgw/value/dhw_pump_starts
+- otgw/value/dhw_burner_starts
+- otgw/value/burner_operation_hours
+- otgw/value/ch_pump_operation_hours
+- otgw/value/dhw_pump_valve_operation_hours
+- otgw/value/dhw_burner_operation_hours
 
-> If you've changed the pub_topic_namespace value in the configuration, replace `value/otgw` with your configured value.
+> If you've changed the pub_topic_namespace value in the configuration, replace `otgw/value` with your configured value.
 > __TODO:__ Add description of all topics
 
 ### Subscription topics
 By default, the service listens to messages from the following MQTT topics:
 
-- set/otgw/room_setpoint/temporary
-- set/otgw/room_setpoint/constant
-- set/otgw/outside_temperature
-- set/otgw/hot_water/enable
-- set/otgw/hot_water/temperature
-- set/otgw/central_heating/enable
+- otgw/set/room_setpoint/temporary - TT - Float
+- otgw/set/room_setpoint/constant - TC - Float
+- otgw/set/outside_temperature - OT - Float
+- otgw/set/hot_water/enable - HW - Boolean
+- otgw/set/hot_water/temperature - SW - Float
+- otgw/set/central_heating/enable - CH - Boolean
+- otgw/set/central_heating/temperature - SH - Float
+- otgw/set/control_setpoint - CS - Float
+- otgw/set/max_modulation - MM - Integer 0-100
 
 > __TODO:__ Add description of all topics

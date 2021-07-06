@@ -6,6 +6,8 @@ import logging
 import signal
 import json
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
+import sys
 
 # Values used to parse boolean values of incoming messages
 true_values=('True', 'true', '1', 'y', 'yes')
@@ -31,7 +33,8 @@ settings = {
         "pub_topic_namespace": "value/otgw",
         "sub_topic_namespace": "set/otgw",
         "retain": False,
-        "changed_messages_only": False
+        "changed_messages_only": False,
+        "homeassistant": None
     }
 }
 
@@ -40,6 +43,7 @@ parser = argparse.ArgumentParser(description="Python OTGW MQTT bridge")
 parser.add_argument("-c", "--config", default="config.json", help="Configuration file (default: %(default)s)")
 parser.add_argument("-l", "--loglevel", default="INFO", help="Event level to log (default: %(default)s)")
 parser.add_argument("-v", "--verbose", action='store_true', help="Enable MQTT logger")
+parser.add_argument("-ha", "--publish-ha-config-only", action='store_true', help="Send config to HA via MQTT w/o connecting to the OTGW")
 args = parser.parse_args()
 # print(args)
 
@@ -71,7 +75,8 @@ with open(args.config) as f:
         settings['mqtt'].update(overrides['mqtt'])
 
 # Set the namespace of the mqtt messages from the settings
-opentherm.topic_namespace=settings['mqtt']['pub_topic_namespace']
+opentherm.pub_topic_namespace=settings['mqtt']['pub_topic_namespace']
+opentherm.sub_topic_namespace=settings['mqtt']['sub_topic_namespace']
 
 # Set up logging
 log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -90,10 +95,14 @@ def on_mqtt_connect(client, userdata, flags, rc):
     mqtt_client.subscribe('{}/#'.format(settings['mqtt']['sub_topic_namespace']))
     mqtt_client.subscribe('{}'.format(settings['mqtt']['sub_topic_namespace']))
     mqtt_client.publish(
-        topic=opentherm.topic_namespace,
+        topic=opentherm.pub_topic_namespace,
         payload="online",
         qos=settings['mqtt']['qos'],
         retain=True)
+
+    # if we're using HA, send the HA discovery messages
+    if settings['mqtt']['homeassistant']:
+        send_HA_discovery()
 
 def on_mqtt_message(client, userdata, msg):
     # Handle incoming messages
@@ -114,6 +123,12 @@ def on_mqtt_message(client, userdata, msg):
             lambda _ :"SW={:.2f}".format(float(_) if is_float(_) else 60),
         "{}/central_heating/enable".format(namespace):  \
             lambda _ :"CH={}".format('0' if _ in false_values else '1'),
+        "{}/central_heating/temperature".format(namespace):   \
+            lambda _ :"SH={:.2f}".format(float(_) if is_float(_) else 60),
+        "{}/control_setpoint".format(namespace):   \
+            lambda _ :"CS={:.2f}".format(float(_) if is_float(_) else 60),
+        "{}/max_modulation".format(namespace):  \
+            lambda _ :"MM={:d}".format(int(_) if is_int(_) else 100),
         "{}/cmd".format(namespace):  \
             lambda _ :_.strip(),
         # TODO: "set/otgw/raw/+": lambda _ :publish_to_otgw("PS", _)
@@ -128,9 +143,12 @@ def on_mqtt_message(client, userdata, msg):
 
 def on_otgw_message(message):
     if args.verbose:
-        log.debug("%s %s", str(datetime.datetime.now()), message)
+        log.debug("message: [type: %s] %s", type(message), message)
+    if type(message) is not tuple:
+        log.error("interal malformed message received - message was probably incorrectly parsed")
+        return
     # Force retain for device state
-    if message[0] == opentherm.topic_namespace and (message[1] == 'online' or message[1] == 'offline'):
+    if message[0] == opentherm.pub_topic_namespace and (message[1] == 'online' or message[1] == 'offline'):
         retain=True
     else:
         retain=settings['mqtt']['retain']
@@ -152,6 +170,49 @@ def on_otgw_message(message):
         qos=settings['mqtt']['qos'],
         retain=retain)
 
+def send_HA_discovery(publish_ha_config_only: bool = False):
+    log.error("sub in mod 2: {}".format(opentherm.sub_topic_namespace))
+
+    messages = opentherm.build_ha_config_data(settings)
+
+    if publish_ha_config_only:
+        log.info("send HA discovery via publish.multiple")
+        connection_settings= dict(
+            # qos=settings['mqtt']['qos'],
+            client_id=settings['mqtt']['client_id'],
+            # retain=False,
+            hostname=settings['mqtt']['host'],
+            port=settings['mqtt']['port'],
+            keepalive=settings['mqtt']['keepalive'],
+            # bind_address=settings['mqtt']['bind_address']
+            )
+
+        if settings['mqtt']['username']:
+            connection_settings.update(
+                dict(
+                    username=settings['mqtt']['username'], 
+                    password=settings['mqtt']['password']
+                    )
+                )
+
+        publish.multiple(
+            msgs=messages,
+            **connection_settings
+        )
+    else:
+        log.info("send HA discovery via mqtt_client")
+
+        for entity in messages:
+            # Send out messages to the MQTT broker
+            if args.verbose:
+                log.debug("send HA discovery: {} ".format(entity))
+            mqtt_client.publish(
+                topic=entity['topic'],
+                payload=entity['payload'],
+                qos=settings['mqtt']['qos'],
+                retain=True)
+
+
 def is_float(value):
     try:
         float(value)
@@ -159,7 +220,26 @@ def is_float(value):
     except ValueError:
         return False
 
+def is_int(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
 log.info("Initializing MQTT")
+
+# publish config to HA
+# if settings['mqtt']['homeassistant']:
+    # log.info("publishing HA config")
+    # send_HA_discovery()
+if args.publish_ha_config_only:
+    if not settings['mqtt']['homeassistant']:
+        log.error('homeassistant is not enabled in the config!')
+    else:
+        send_HA_discovery(publish_ha_config_only=True)
+        log.error("pushed config -- quit")
+    sys.exit(0)
 
 # Set up paho-mqtt
 mqtt_client = mqtt.Client(
@@ -177,7 +257,7 @@ if settings['mqtt']['username']:
 # The will makes sure the device registers as offline when the connection
 # is lost
 mqtt_client.will_set(
-    topic=opentherm.topic_namespace,
+    topic=opentherm.pub_topic_namespace,
     payload="offline",
     qos=settings['mqtt']['qos'],
     retain=True)
