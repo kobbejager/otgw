@@ -1,7 +1,7 @@
 import argparse
 import opentherm
 from opentherm import SignalExit, SignalAlarm
-import datetime
+from datetime import datetime
 import logging
 import signal
 import json
@@ -34,6 +34,7 @@ settings = {
         "sub_topic_namespace": "set/otgw",
         "retain": False,
         "changed_messages_only": False,
+        "publish_timestamps": False,
         "homeassistant": None
     }
 }
@@ -52,17 +53,21 @@ num_level = getattr(logging, args.loglevel.upper(), None)
 if not isinstance(num_level, int):
     raise ValueError('Invalid log level: %s' % args.loglevel)
 
+
 # Setup signal handlers
 def sig_exit_handler(signal, frame):
     logging.warning("Exiting on signal %r", signal)
     raise SignalExit
 
+
 signal.signal(signal.SIGINT, sig_exit_handler)
 signal.signal(signal.SIGTERM, sig_exit_handler)
+
 
 def sig_alarm_handler(signal, frame):
     logging.warning("No data received after %d seconds.", settings['otgw']['data_timeout'])
     raise SignalAlarm
+
 
 signal.signal(signal.SIGALRM, sig_alarm_handler)
 
@@ -88,6 +93,7 @@ log.info('Loglevel is %s', logging.getLevelName(log.getEffectiveLevel()))
 if settings['mqtt']['changed_messages_only']:
     stored_messages = {}
 
+
 def on_mqtt_connect(client, userdata, flags, rc):
     # Subscribe to all topics in our namespace when we're connected. Send out
     # a message telling we're online
@@ -103,6 +109,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     # if we're using HA, send the HA discovery messages
     if settings['mqtt']['homeassistant']:
         send_HA_discovery()
+
 
 def on_mqtt_message(client, userdata, msg):
     # Handle incoming messages
@@ -141,6 +148,7 @@ def on_mqtt_message(client, userdata, msg):
         log.info("Sending command: '{}'".format(command))
         otgw_client.send("{}\r".format(command))
 
+
 def on_otgw_message(message):
     if args.verbose:
         log.debug("message: [type: %s] %s", type(message), message)
@@ -169,6 +177,14 @@ def on_otgw_message(message):
         payload=message[1],
         qos=settings['mqtt']['qos'],
         retain=retain)
+    # Publish timestamp of last published message (if enabled)
+    if settings ['mqtt']['publish_timestamps']:
+        mqtt_client.publish(
+            topic=settings['mqtt']['pub_topic_namespace'] + '/last_message_timestamp',
+            payload=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            qos=settings['mqtt']['qos'],
+            retain=retain)
+
 
 def send_HA_discovery(publish_ha_config_only: bool = False):
     log.error("sub in mod 2: {}".format(opentherm.sub_topic_namespace))
@@ -220,12 +236,14 @@ def is_float(value):
     except ValueError:
         return False
 
+
 def is_int(value):
     try:
         int(value)
         return True
     except ValueError:
         return False
+
 
 log.info("Initializing MQTT")
 

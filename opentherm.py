@@ -147,7 +147,7 @@ master_slave_status_bits = {
     13: "bit_13/state",
     14: "bit_14/state",
     15: "bit_15/state",
-    }
+}
 
 
 def cleanNullTerms(d):
