@@ -11,7 +11,6 @@ log = logging.getLogger(__name__)
 # config
 pub_topic_namespace="otgw/value"
 sub_topic_namespace="otgw/set"
-ha_publish_namespace="homeassistant"
 
 # Parse hex string to int
 def hex_int(hex):
@@ -106,235 +105,48 @@ def get_messages(message):
 opentherm_ids = {
     # flame status is special case... multiple bits of data. see flags_msg_generator
 	0:   ("master_slave_status",flags_msg_generator,),
-	1:   ("control_setpoint/setpoint",float_msg_generator,),
-	9:   ("remote_override_setpoint/setpoint",float_msg_generator,),
-	14:  ("max_relative_modulation_level/level",float_msg_generator,),
-	16:  ("room_setpoint/setpoint",float_msg_generator,),
-	17:  ("relative_modulation_level/level",float_msg_generator,),
-	18:  ("ch_water_pressure/pressure",float_msg_generator,),
-	24:  ("room_temperature/temperature",float_msg_generator,),
-	25:  ("boiler_water_temperature/temperature",float_msg_generator,),
-	26:  ("dhw_temperature/temperature",float_msg_generator,),
-	27:  ("outside_temperature/temperature",float_msg_generator,),
-	28:  ("return_water_temperature/temperature",float_msg_generator,),
-	56:  ("dhw_setpoint/setpoint",float_msg_generator,),
-	57:  ("max_ch_water_setpoint/setpoint",float_msg_generator,),
-	116: ("burner_starts/count",int_msg_generator,),
-	117: ("ch_pump_starts/count",int_msg_generator,),
-	118: ("dhw_pump_starts/count",int_msg_generator,),
-	119: ("dhw_burner_starts/count",int_msg_generator,),
-	120: ("burner_operation_hours/hours",int_msg_generator,),
-	121: ("ch_pump_operation_hours/hours",int_msg_generator,),
-	122: ("dhw_pump_valve_operation_hours/hours",int_msg_generator,),
-	123: ("dhw_burner_operation_hours/hours",int_msg_generator,),
+	1:   ("control_setpoint",float_msg_generator,),
+	9:   ("remote_override_setpoint",float_msg_generator,),
+	14:  ("max_relative_modulation_level",float_msg_generator,),
+	16:  ("room_setpoint",float_msg_generator,),
+	17:  ("relative_modulation_level",float_msg_generator,),
+	18:  ("ch_water_pressure",float_msg_generator,),
+	24:  ("room_temperature",float_msg_generator,),
+	25:  ("boiler_water_temperature",float_msg_generator,),
+	26:  ("dhw_temperature",float_msg_generator,),
+	27:  ("outside_temperature",float_msg_generator,),
+	28:  ("return_water_temperature",float_msg_generator,),
+	56:  ("dhw_setpoint",float_msg_generator,),
+	57:  ("max_ch_water_setpoint",float_msg_generator,),
+	116: ("burner_starts_count",int_msg_generator,),
+	117: ("ch_pump_starts_count",int_msg_generator,),
+	118: ("dhw_pump_starts_count",int_msg_generator,),
+	119: ("dhw_burner_starts_count",int_msg_generator,),
+	120: ("burner_operation_hours",int_msg_generator,),
+	121: ("ch_pump_operation_hours",int_msg_generator,),
+	122: ("dhw_pump_valve_operation_hours",int_msg_generator,),
+	123: ("dhw_burner_operation_hours",int_msg_generator,),
 }
 
 # { <bit>, <name>}
 master_slave_status_bits = {
-    0:  "fault/state",
-    1:  "ch_active/state",
-    2:  "dhw_active/state",
-    3:  "flame_on/state",
-    4:  "cooling_active/state",
-    5:  "ch2_active/state",
-    6:  "diagnostic_indication/state",
-    7:  "bit_7/state",
-    8:  "ch_enabled/state",
-    9:  "dhw_enabled/state",
-    10: "cooling_enabled/state",
-    11: "otc_active/state",
-    12: "ch2_enabled/state",
-    13: "bit_13/state",
-    14: "bit_14/state",
-    15: "bit_15/state",
-    }
-
-
-def cleanNullTerms(d):
-    clean = {}
-    for k, v in d.items():
-        if isinstance(v, dict):
-            nested = cleanNullTerms(v)
-            if len(nested.keys()) > 0:
-                clean[k] = nested
-        elif v is not None:
-            clean[k] = v
-    return clean
-
-
-def build_ha_config_data (config):
-    payload_sensor = {
-        "availability_topic": pub_topic_namespace,
-        "device":
-            {
-            "connections": None,
-            "identifiers": ["{}-{}:{}".format(config['mqtt']['client_id'], config['otgw']['host'], config['otgw']['port'])],
-            "manufacturer": "Schelte Bron",
-            "model": "otgw-nodo",
-            "name": "OpenTherm Gateway ({})".format(config['mqtt']['client_id']),
-            "sw_version": None,
-            "via_device": None
-            },
-        "device_class": None,
-        "expire_after": None,
-        "force_update": 'True',
-        "icon": None,
-        "json_attributes_template": None,
-        "json_attributes_topic": None,
-        "name": None,
-        "payload_available": None,
-        "payload_not_available": None,
-        "qos": None,
-        "state_topic": None,
-        "unique_id": None,
-        "unit_of_measurement": None,
-        "value_template": None,
-    }
-    # deepcopy
-    payload_climate = copy.deepcopy(payload_sensor)
-    payload_climate = {**payload_climate, 
-        **{
-        # "action_template": None,
-        # "action_topic": None,
-        # "aux_command_topic": None,
-        # "aux_state_template": None,
-        # "aux_state_topic": None,
-        # "away_mode_command_topic": None,
-        # "away_mode_state_template": None,
-        # "away_mode_state_topic": None,
-        "current_temperature_topic": pub_topic_namespace+'/room_temperature/temperature',
-        "current_temperature_template": None,
-        "initial": '18',
-        "max_temp": '24',
-        "min_temp": '16',
-        # "mode_command_topic": None,
-        "mode_state_template": "{% if value == '1' %}heat{% else %}off{% endif %}",
-        "mode_state_topic": pub_topic_namespace+'/ch_enabled/state',
-        "modes": ['off', 'heat'],
-        "precision": 0.1,
-        "retain": None,
-        "send_if_off": None,
-        # using temporary allows local thermostat override. use /constant to block
-        # room thermostat input
-        "temperature_command_topic": sub_topic_namespace+'/room_setpoint/temporary',
-        "temperature_state_template": None,
-        "temperature_state_topic": pub_topic_namespace+'/room_setpoint/setpoint',
-        "temperature_unit": "C",
-        "temp_step": "0.5", 
-        "availability":
-            {
-            "payload_available": None,
-            "payload_not_available": None,
-            "topic": None,
-            },
-        "payload_off": 0,
-        "payload_on": 1,
-        }
-    }
-    del payload_climate["expire_after"]
-    del payload_climate["force_update"]
-    del payload_climate["icon"]
-    del payload_climate["state_topic"]
-    del payload_climate["unit_of_measurement"]
-
-    # deepcopy
-    payload_binary_sensor = copy.deepcopy(payload_sensor)
-    payload_binary_sensor = {**payload_binary_sensor, 
-        **{
-        "availability":
-            {
-            "payload_available": None,
-            "payload_not_available": None,
-            "topic": None,
-            },
-        "off_delay": None,
-        "payload_off": 0,
-        "payload_on": 1,
-        }
-    }
-    del payload_binary_sensor["unit_of_measurement"]
-    payload_binary_sensor['device_class'] = 'heat'
-
-    # deepcopy
-    payload_sensor_temperature = copy.deepcopy(payload_sensor)
-    payload_sensor_temperature['device_class'] = 'temperature'
-    payload_sensor_temperature['unit_of_measurement'] = 'C'
-
-    payload_sensor_hours = copy.deepcopy(payload_sensor)
-    payload_sensor_hours['device_class'] = None
-    payload_sensor_hours['icon'] = 'mdi:clock'
-    payload_sensor_hours['unit_of_measurement'] = 'Hours'
-
-    payload_sensor_pressure = copy.deepcopy(payload_sensor)
-    payload_sensor_pressure['device_class'] = 'pressure'
-    payload_sensor_pressure['unit_of_measurement'] = 'Bar'
-
-
-    payload_sensor_count = copy.deepcopy(payload_sensor)
-    payload_sensor_count['device_class'] = None
-    payload_sensor_count['icon'] = 'mdi:counter'
-    payload_sensor_count['unit_of_measurement'] = 'x'
-
-    payload_sensor_level = copy.deepcopy(payload_sensor)
-    payload_sensor_level['device_class'] = None
-    payload_sensor_level['icon'] = 'mdi:percent'
-    payload_sensor_level['unit_of_measurement'] = '%'
-
-    payload_mapping = {
-        "setpoint": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
-        "temperature": {'ha_type': 'sensor', 'payload': payload_sensor_temperature},
-        "hours": {'ha_type': 'sensor', 'payload': payload_sensor_hours},
-        "count": {'ha_type': 'sensor', 'payload': payload_sensor_count},
-        "level": {'ha_type': 'sensor', 'payload': payload_sensor_level},
-        "state": {'ha_type': 'binary_sensor', 'payload': payload_binary_sensor},
-        "pressure": {'ha_type': 'sensor', 'payload': payload_sensor_pressure},
-    }
-
-
-    #########
-    #########
-    #########
-
-    data = []
-
-    # data.append( {'topic': "{}/climate/thermostat/config".format(ha_publish_namespace), 'payload': ''})
-    # add thermostat entity
-    payload_climate['name'] = "{}_Thermostat".format(config['mqtt']['client_id'])
-    payload_climate['unique_id'] = "{}_thermostat".format(config['mqtt']['client_id'])
-    data.append( {'topic': "{}/climate/{}/thermostat/config".format(ha_publish_namespace, payload_climate['unique_id'] ), 'payload': json.dumps(cleanNullTerms(payload_climate)) })
-
-    # ID's below are fictive and only used for easy iteration below
-
-    # build list of all entities, use their names
-    entity_list = []
-    entity_list += [opentherm_ids[x][0] for x in opentherm_ids]                         # opentherm_ids full names
-    entity_list += [master_slave_status_bits[x] for x in master_slave_status_bits]      # master_slave_status_bits full names
-
-    # todo: setpoint entities for the water temp setpoints
-
-    for full_name in entity_list:
-        
-        # dont include id 0: master_slave_status
-        if "/" not in full_name:
-            continue
-
-        # otgw_type = full_name.split("/")[-1]
-        # name = full_name.split("/")[0]
-        name, otgw_type = full_name.split("/")
-        
-        ha_type = payload_mapping[otgw_type]['ha_type']
-        payload = copy.deepcopy(payload_mapping[otgw_type]['payload'])
-
-        payload['name'] = "{}_{}".format(config['mqtt']['client_id'],name)
-        # need to add the mqtt client name here to make it truely unique
-        payload['unique_id'] = "{}_{}".format(config['mqtt']['client_id'],name)
-        payload['state_topic'] = "{}/{}".format(pub_topic_namespace, full_name)
-        publish_topic = "{}/{}/{}/{}/config".format(ha_publish_namespace, ha_type, payload['unique_id'], name)
-        payload = cleanNullTerms(payload)
-        payload = json.dumps(payload)
-        data.append( {'topic': publish_topic, 'payload': payload, 'retain':'True'})
-
-    return data
+    0:  "fault_state",
+    1:  "ch_active_state",
+    2:  "dhw_active_state",
+    3:  "flame_on_state",
+    4:  "cooling_active_state",
+    5:  "ch2_active_state",
+    6:  "diagnostic_indication_state",
+    7:  "bit_7_state",
+    8:  "ch_enabled_state",
+    9:  "dhw_enabled_state",
+    10: "cooling_enabled_state",
+    11: "otc_active_state",
+    12: "ch2_enabled_state",
+    13: "bit_13_state",
+    14: "bit_14_state",
+    15: "bit_15_state",
+}
 
 
 class OTGWClient(object):
