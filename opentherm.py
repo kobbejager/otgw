@@ -82,7 +82,7 @@ def get_messages(message):
     info = line_parser.match(message)
     if info is None:
         if message:
-            log.error("Did not understand message: '{}'".format(message))
+            log.debug("Did not understand message: '{}'".format(message))
         return iter([])
     (source, ttype, res, did, data) = \
         map(lambda f, d: f(d),
