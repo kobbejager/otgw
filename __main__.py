@@ -1,13 +1,11 @@
 import argparse
 import opentherm
 from opentherm import SignalExit, SignalAlarm
-import datetime
 import logging
 import signal
 import json
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
-import sys
 
 # Values used to parse boolean values of incoming messages
 true_values=('True', 'true', '1', 'y', 'yes')
@@ -77,7 +75,7 @@ opentherm.pub_topic_namespace=settings['mqtt']['pub_topic_namespace']
 opentherm.sub_topic_namespace=settings['mqtt']['sub_topic_namespace']
 
 # Set up logging
-log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+log_format = 'otgw: %(levelname)s - %(message)s'
 logging.basicConfig(level=num_level, format=log_format)
 log = logging.getLogger(__name__)
 log.info('Loglevel is %s', logging.getLevelName(log.getEffectiveLevel()))
@@ -100,7 +98,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
 
 def on_mqtt_message(client, userdata, msg):
     # Handle incoming messages
-    log.info("Received message on topic {} with payload {}".format(
+    log.debug("Received message on topic {} with payload {}".format(
         msg.topic, 
         str(msg.payload.decode('ascii', 'ignore'))))
     namespace = settings['mqtt']['sub_topic_namespace']
@@ -132,7 +130,7 @@ def on_mqtt_message(client, userdata, msg):
     if command_generator:
         # Get the command and send it to the OTGW
         command = command_generator(msg.payload.decode('ascii', 'ignore'))
-        log.info("Sending command: '{}'".format(command))
+        log.debug("Sending command: '{}'".format(command))
         otgw_client.send("{}\r".format(command))
 
 def on_otgw_message(message):

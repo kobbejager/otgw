@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/usr/lib/py-otgw-mqtt
-ExecStart=/usr/bin/python .
+WorkingDirectory=/opt/py-otgw-mqtt
+ExecStart=/usr/bin/python3 .
 Restart=on-failure
 RestartSec=30s
 
