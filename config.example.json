@@ -17,7 +17,6 @@
         "pub_topic_namespace": "otgw/value",
         "sub_topic_namespace": "otgw/set",
         "retain": false,
-        "changed_messages_only": false,
-        "homeassistant": true
+        "changed_messages_only": false
     }
 }
