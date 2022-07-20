@@ -3,7 +3,6 @@ from threading import Thread
 from time import sleep
 import logging
 import collections
-import copy, json
 
 log = logging.getLogger(__name__)
 
@@ -118,10 +117,10 @@ opentherm_ids = {
 	28:  ("return_water_temperature",float_msg_generator,),
 	56:  ("dhw_setpoint",float_msg_generator,),
 	57:  ("max_ch_water_setpoint",float_msg_generator,),
-	116: ("burner_starts_count",int_msg_generator,),
-	117: ("ch_pump_starts_count",int_msg_generator,),
-	118: ("dhw_pump_starts_count",int_msg_generator,),
-	119: ("dhw_burner_starts_count",int_msg_generator,),
+	116: ("burner_starts",int_msg_generator,),
+	117: ("ch_pump_starts",int_msg_generator,),
+	118: ("dhw_pump_starts",int_msg_generator,),
+	119: ("dhw_burner_starts",int_msg_generator,),
 	120: ("burner_operation_hours",int_msg_generator,),
 	121: ("ch_pump_operation_hours",int_msg_generator,),
 	122: ("dhw_pump_valve_operation_hours",int_msg_generator,),
@@ -130,22 +129,18 @@ opentherm_ids = {
 
 # { <bit>, <name>}
 master_slave_status_bits = {
-    0:  "fault_state",
-    1:  "ch_active_state",
-    2:  "dhw_active_state",
-    3:  "flame_on_state",
-    4:  "cooling_active_state",
-    5:  "ch2_active_state",
-    6:  "diagnostic_indication_state",
-    7:  "bit_7_state",
-    8:  "ch_enabled_state",
-    9:  "dhw_enabled_state",
-    10: "cooling_enabled_state",
-    11: "otc_active_state",
-    12: "ch2_enabled_state",
-    13: "bit_13_state",
-    14: "bit_14_state",
-    15: "bit_15_state",
+    0:  "status/fault",
+    1:  "status/ch_active",
+    3:  "status/flame_on",
+    2:  "status/dhw_active",
+    4:  "status/cooling_active",
+    5:  "status/ch2_active",
+    6:  "status/diagnostic_indication",
+    8:  "status/ch_enabled",
+    9:  "status/dhw_enabled",
+    10: "status/cooling_enabled",
+    11: "status/otc_active",
+    12: "status/ch2_enabled"
 }
 
 

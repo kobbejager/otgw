@@ -54,19 +54,19 @@ To install this script as a daemon, run the following commands (on a Debian-base
    ```
 2. Create a new folder, for example:
    ```bash
-   sudo mkdir -p /opt/py-otgw-mqtt
-   cd /opt/py-otgw-mqtt
+   sudo mkdir -p /opt/otgw
+   cd /opt/otgw
    ```
 3. Clone this repository into the current directory:
    ```bash
-   sudo git clone https://github.com/HellMar/py-otgw-mqtt.git .
+   sudo git clone https://github.com/kobbejager/otgw.git .
    ```
 4. Copy the config.json.example file to config.json
    ```bash
    sudo cp config.json.example config.json
    ```
 5. Change `config.json` with your favorite text editor
-6. Copy the service file to the systemd directory. If you used a different folder name than `/usr/lib/py-otgw-mqtt` you will need to change the `WorkingDirectory` in the file first.
+6. Copy the service file to the systemd directory. If you used a different folder name than `/opt/otgw` you will need to change the `WorkingDirectory` in the file first.
    ```bash
    sudo cp ./otgw.service /etc/systemd/system/
    ```
@@ -91,9 +91,18 @@ By default, the service publishes messages to the following MQTT topics:
 
 - otgw/value => _The status of the service_
 - otgw/value/master_slave_status
-- otgw/value/ch_enabled
-- otgw/value/dhw_enabled
-- otgw/value/cooling_enabled
+- otgw/value/status/fault
+- otgw/value/status/ch_active
+- otgw/value/status/flame_on
+- otgw/value/status/dhw_active
+- otgw/value/status/cooling_active
+- otgw/value/status/ch2_active
+- otgw/value/status/diagnostic_indication
+- otgw/value/status/ch_enabled
+- otgw/value/status/dhw_enabled
+- otgw/value/status/cooling_enabled
+- otgw/value/status/otc_active
+- otgw/value/status/ch2_enable
 - otgw/value/control_setpoint
 - otgw/value/remote_override_setpoint
 - otgw/value/max_relative_modulation_level
@@ -131,5 +140,6 @@ By default, the service listens to messages from the following MQTT topics:
 - otgw/set/central_heating/temperature - SH - Float
 - otgw/set/control_setpoint - CS - Float
 - otgw/set/max_modulation - MM - Integer 0-100
+- otgw/set/cmd (takes any otgw command e.g. TT=20)
 
 > __TODO:__ Add description of all topics

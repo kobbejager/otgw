@@ -5,7 +5,6 @@ import logging
 import signal
 import json
 import paho.mqtt.client as mqtt
-import paho.mqtt.publish as publish
 
 # Values used to parse boolean values of incoming messages
 true_values=('True', 'true', '1', 'y', 'yes')
@@ -28,8 +27,8 @@ settings = {
         "username": None,
         "password": None,
         "qos": 0,
-        "pub_topic_namespace": "value/otgw",
-        "sub_topic_namespace": "set/otgw",
+        "pub_topic_namespace": "otgw/value",
+        "sub_topic_namespace": "otgw/set",
         "retain": False,
         "changed_messages_only": False
     }
