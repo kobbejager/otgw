@@ -206,7 +206,7 @@ class OTGWClient(object):
         Block until the worker thread finishes or exit signal received
         """
         try:
-            while self._worker_thread.isAlive():
+            while self._worker_thread.is_alive():
                 self._worker_thread.join(1)
         except SignalExit:
             self.stop()
