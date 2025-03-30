@@ -34,6 +34,9 @@ settings = {
     }
 }
 
+# Track the setpoint override mode (off, temporary, constant)
+setpoint_override_mode = "off"
+
 # Parse arguments
 parser = argparse.ArgumentParser(description="Python OTGW MQTT bridge")
 parser.add_argument("-c", "--config", default="config.json", help="Configuration file (default: %(default)s)")
@@ -94,6 +97,33 @@ def on_mqtt_connect(client, userdata, flags, rc):
         payload="online",
         qos=settings['mqtt']['qos'],
         retain=True)
+    
+    # Reset any active overrides
+    log.info("Resetting any active overrides")
+    otgw_client.send("TT=0\r")
+
+def update_setpoint_override_mode(mode, value):
+    global setpoint_override_mode
+    
+    # Check if value is 0 (which means disable override)
+    try:
+        val = float(value) if is_float(value) else 0
+        if val == 0:
+            new_mode = "off"
+        else:
+            new_mode = mode
+    except ValueError:
+        new_mode = "off"
+        
+    # Publish mode change if it changed
+    if new_mode != setpoint_override_mode:
+        setpoint_override_mode = new_mode
+        mqtt_client.publish(
+            topic="{}/override_mode".format(opentherm.pub_topic_namespace),
+            payload=setpoint_override_mode,
+            qos=settings['mqtt']['qos'],
+            retain=settings['mqtt']['retain'])
+        log.info("Override mode changed to: %s", setpoint_override_mode)
 
 def on_mqtt_message(client, userdata, msg):
     # Handle incoming messages
@@ -124,15 +154,25 @@ def on_mqtt_message(client, userdata, msg):
             lambda _ :_.strip(),
         # TODO: "set/otgw/raw/+": lambda _ :publish_to_otgw("PS", _)
     }
+    
     # Find the correct command generator from the dict above
     command_generator = command_generators.get(msg.topic)
     if command_generator:
         # Get the command and send it to the OTGW
-        command = command_generator(msg.payload.decode('ascii', 'ignore'))
+        payload = msg.payload.decode('ascii', 'ignore')
+        command = command_generator(payload)
         log.debug("Sending command: '{}'".format(command))
         otgw_client.send("{}\r".format(command))
+        
+        # Update override mode if setpoint commands were sent
+        if msg.topic == "{}/room_setpoint/temporary".format(namespace):
+            update_setpoint_override_mode("temporary", payload)
+        elif msg.topic == "{}/room_setpoint/constant".format(namespace):
+            update_setpoint_override_mode("constant", payload)
 
 def on_otgw_message(message):
+    global setpoint_override_mode
+    
     if args.verbose:
         log.debug("message: [type: %s] %s", type(message), message)
     if type(message) is not tuple:
@@ -146,6 +186,20 @@ def on_otgw_message(message):
         # Reset alarm when OTGW data is received
         signal.alarm(settings['otgw']['data_timeout'])
     
+    # Check if this is a remote_override_setpoint message with value 0
+    if message[0] == "{}/remote_override_setpoint".format(opentherm.pub_topic_namespace):
+        try:
+            if float(message[1]) == 0 and setpoint_override_mode != "off":
+                setpoint_override_mode = "off"
+                mqtt_client.publish(
+                    topic="{}/override_mode".format(opentherm.pub_topic_namespace),
+                    payload=setpoint_override_mode,
+                    qos=settings['mqtt']['qos'],
+                    retain=settings['mqtt']['retain'])
+                log.info("Override mode reset to: %s", setpoint_override_mode)
+        except (ValueError, TypeError):
+            pass
+    
     # In case the option changed_messages_only is enabled: only those that have changed
     if settings['mqtt']['changed_messages_only']:
         # If the topic exists in the stored messages dict, and is unchanged, don't send out message
@@ -154,6 +208,7 @@ def on_otgw_message(message):
                 return
         # Update stored messages dict
         stored_messages[message[0]] = message[1]
+        
     # Send out messages to the MQTT broker
     mqtt_client.publish(
         topic=message[0],
