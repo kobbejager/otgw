@@ -1,3 +1,15 @@
 *.pyc
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+requirements.txt
+
+# local configuration
+otgw.yaml
 config.json
-venv
+
+# secrets: MQTT connection settings (see .env.example)
+.env
+.env.*
+!.env.example

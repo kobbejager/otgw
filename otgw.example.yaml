@@ -1,0 +1,38 @@
+# otgw configuration. Every setting is shown with its default.
+
+# MQTT connection. host, port, username and password normally come from .env
+# (OTGW_MQTT_HOST, ...); every setting here can be overridden as OTGW_MQTT_<KEY>.
+mqtt:
+  prefix: otgw               # topics: <prefix>/status, <prefix>/room_temperature, ...
+  client_id: otgw
+  keepalive: 60
+  qos: 1
+  # password_file: /etc/otgw/mqtt-password   # alternative to OTGW_MQTT_PASSWORD
+
+gateway:
+  # Serial (USB). Prefer the stable name in /dev/serial/by-id/ (ls -l /dev/serial/by-id/).
+  device: /dev/ttyUSB0
+  baudrate: 9600
+  # TCP instead (ser2net, otmonitor relay, ...): set host and port; device is then ignored.
+  # host: 192.168.1.20
+  # port: 25238
+  timeout: 30                # seconds without a message: report offline and reconnect
+  poll_interval: 60          # seconds between override / hot water status queries
+
+publish:
+  refresh: 300               # republish unchanged values after this many seconds
+
+thermostat:
+  temperature: {min: 5, max: 30, step: 0.5}   # Home Assistant thermostat card range
+
+limits:                      # Home Assistant number entities
+  dhw_setpoint: {min: 40, max: 65, step: 1}
+  max_ch_water_setpoint: {min: 30, max: 90, step: 1}
+
+discovery:                   # Home Assistant MQTT discovery
+  enabled: true
+  prefix: homeassistant
+  default_entity_ids: true   # climate.otgw_thermostat, sensor.otgw_room_temperature, ...; HA >= 2025.10
+  object_id: otgw            # base of the unique ids and entity ids; changing it creates a new device
+  name: OpenTherm Gateway
+  # area: Technische ruimte
